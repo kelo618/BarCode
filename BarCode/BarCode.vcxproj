@@ -139,6 +139,7 @@
   <ItemGroup>
     <ClInclude Include="code128.h" />
     <ClInclude Include="BarCode.h" />
+    <ClInclude Include="code39.h" />
     <ClInclude Include="ean13.h" />
     <ClInclude Include="ean8.h" />
   </ItemGroup>

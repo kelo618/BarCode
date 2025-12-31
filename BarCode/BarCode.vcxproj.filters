@@ -32,5 +32,8 @@
     <ClInclude Include="BarCode.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="code39.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

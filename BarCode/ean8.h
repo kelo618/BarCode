@@ -33,26 +33,21 @@ namespace BarCode {
 			pattern += "101"; // 右护条
 		}
 
-		void addLabels() override {
-			const int textY = barHeight + guardExtension + 20;
+		int getModuleCenterForDigit(size_t index) const override {
 			const int xBase = quietZone * moduleWidth;
 
-			// 左侧4位（起始位置：左护条3模块）
-			for (int i = 0; i < 4; ++i) {
-				cv::putText(barcodeImage, fullData.substr(i, 1),
-					cv::Point(xBase + (3 + i * 7) * moduleWidth, textY),
-					cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(0), fontThickness);
+			if (index < 4) { // 左侧4位
+				int moduleStart = 3 + index * 7;
+				return xBase + (moduleStart + 3.5) * moduleWidth;
 			}
-
-			// 右侧4位（起始位置：左护条3 + 左侧4位*7 + 中间护条5）
-			for (int i = 4; i < 8; ++i) {
-				cv::putText(barcodeImage, fullData.substr(i, 1),
-					cv::Point(xBase + (3 + 4 * 7 + 5 + (i - 4) * 7) * moduleWidth, textY),
-					cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(0), fontThickness);
+			else { // 右侧4位
+				int moduleStart = 36 + (index - 4) * 7; // 中护栏后
+				return xBase + (moduleStart + 3.5) * moduleWidth;
 			}
 		}
 
-		virtual char calculateCheckDigit(const std::string& code) override {
+	private:
+		char calculateCheckDigit(const std::string& code) override {
 			constexpr std::array<int, 7> weights = { 3,1,3,1,3,1,3 };
 			int sum = 0;
 			for (size_t i = 0; i < 7; ++i) {
@@ -61,27 +56,6 @@ namespace BarCode {
 			return '0' + ((10 - (sum % 10)) % 10);
 		}
 
-	private:
-		void renderImage() {
-			const int totalWidth = (2 * quietZone + pattern.size()) * moduleWidth;
-			const int totalHeight = barHeight + guardExtension + 40;
-			initializeImage(totalWidth, totalHeight);
-
-			int x = quietZone * moduleWidth;
-			for (size_t i = 0; i < pattern.size(); ++i) {
-				if (pattern[i] == '1') {
-					const int height = isGuardPosition(i) ?
-						barHeight + guardExtension : barHeight;
-					drawBar(x + i * moduleWidth, moduleWidth, height);
-				}
-			}
-		}
-
-		bool isGuardPosition(size_t index) const {
-			return (index < 3) ||                   // 左护条
-				(index >= 31 && index < 36) ||    // 中间护条（4字符×7模块 + 3）
-				(index >= pattern.size() - 3);    // 右护条
-		}
 	};
 }
 #endif // !_EAN_8_H

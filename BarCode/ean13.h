@@ -15,6 +15,7 @@ namespace BarCode {
 		}
 
 		void generatePattern() override {
+			pattern.clear();
 			static const std::unordered_map<char, std::string> parityMap = {
 				{'0',"LLLLLL"}, {'1',"LLGLGG"}, {'2',"LLGGLG"},
 				{'3',"LLGGGL"}, {'4',"LGLLGG"}, {'5',"LGGLLG"},
@@ -40,53 +41,23 @@ namespace BarCode {
 			pattern += "101"; // 右护条
 		}
 
-		void addLabels() override {
-			const int textY =
-				barHeight + guardExtension + 15;   // 稍微靠近条码
-
+		int getModuleCenterForDigit(size_t index) const override {
 			const int xBase = quietZone * moduleWidth;
 
-			auto drawCenteredText = [&](const std::string& text, int centerX) {
-				cv::Size size = cv::getTextSize(
-					text,
-					cv::FONT_HERSHEY_SIMPLEX,
-					fontScale,
-					fontThickness,
-					nullptr
-				);
-				cv::putText(
-					barcodeImage,
-					text,
-					cv::Point(centerX - size.width / 2, textY),
-					cv::FONT_HERSHEY_SIMPLEX,
-					fontScale,
-					0,
-					fontThickness
-				);
-				};
-
-			// ---------- 首位数字（居中在起始护栏左侧） ----------
-			{
+			if (index == 0) { // 首位数字（在左护栏外）
 				int startGuardWidth = 3 * moduleWidth;
-				int centerX = xBase - startGuardWidth / 2;
-				drawCenteredText(fullData.substr(0, 1), centerX);
+				return xBase - startGuardWidth / 2;
 			}
-
-			// ---------- 左侧 6 位 ----------
-			for (int i = 0; i < 6; ++i) {
-				int moduleStart = 3 + i * 7;  // 左护栏后
-				int centerX = xBase + (moduleStart + 3.5) * moduleWidth;
-				drawCenteredText(fullData.substr(i + 1, 1), centerX);
+			else if (index >= 1 && index <= 6) { // 左侧6位
+				int moduleStart = 3 + (index - 1) * 7;
+				return xBase + (moduleStart + 3.5) * moduleWidth;
 			}
-
-			// ---------- 右侧 6 位 ----------
-			for (int i = 0; i < 6; ++i) {
-				int moduleStart = 50 + i * 7; // 中护栏后
-				int centerX = xBase + (moduleStart + 3.5) * moduleWidth;
-				drawCenteredText(fullData.substr(i + 7, 1), centerX);
+			else if (index >= 7 && index <= 12) { // 右侧6位
+				int moduleStart = 50 + (index - 7) * 7;
+				return xBase + (moduleStart + 3.5) * moduleWidth;
 			}
+			return xBase; // 防御
 		}
-
 	private:
 		char calculateCheckDigit(const std::string& code) override {
 			int sum = 0;
@@ -105,36 +76,6 @@ namespace BarCode {
 				{'9',"0010111"}
 			};
 			return G.at(c);
-		}
-
-		void renderImage() override {
-			const int totalWidth = (2 * quietZone + static_cast<int>(pattern.size())) * moduleWidth;
-			const int topMargin = 10;
-			const int bottomMargin = 10;
-			const int totalHeight =
-				barHeight + guardExtension + topMargin + bottomMargin;
-			initializeImage(totalWidth, totalHeight);
-
-			int baseX = quietZone * moduleWidth;
-
-			for (size_t i = 0; i < pattern.size(); ++i) {
-				if (pattern[i] == '1') {
-					bool isGuard =
-						isLeftGuard(i) ||
-						isCenterGuard(i) ||
-						isRightGuard(i, pattern.size());
-
-					int height = isGuard
-						? barHeight + guardExtension
-						: barHeight;
-
-					drawBar(
-						baseX + i * moduleWidth,
-						moduleWidth,
-						height
-					);
-				}
-			}
 		}
 	};
 }
