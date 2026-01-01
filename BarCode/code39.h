@@ -1,21 +1,18 @@
 #pragma once
 #ifndef _CODE39_H
 #define _CODE39_H
-
 #include "BarCode.h"
 
 namespace BarCode {
 	class Code39 : public CodeBarcode {
 		using CodeBarcode::CodeBarcode;
-	public:
-		void encode(const std::string& data) override {
-			clear();
-			fullData = "*" + data + "*";  // 开始/结束符
-			elements.clear();
-			CodeBarcode::encode(fullData);
-		}
 
 	protected:
+		std::string prepareEncodedData(
+			const std::string& userData) const override
+		{
+			return "*" + userData + "*";
+		}
 		void buildElements(const std::string& data) override {
 			for (char c : data) {
 				const std::string& pattern = CODE39_TABLE.at(c); // 'w'/'n'
@@ -46,6 +43,21 @@ namespace BarCode {
 					fontScale, cv::Scalar(0), fontThickness);
 				x += narrowModule * 9 * moduleWidth; // Code39每字符9模块
 			}
+		}
+
+		bool isValidChar(char c) const override {
+			static const std::string charset =
+				"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%";
+			return charset.find(c) != std::string::npos;
+		}
+
+		void validateInput(const std::string& data) override {
+			CodeBarcode::validateInput(data);
+
+			if (data.find('*') != std::string::npos)
+				throw std::invalid_argument(
+					"Code39 data must not contain '*'"
+				);
 		}
 	private:
 		static inline const std::unordered_map<char, std::string> CODE39_TABLE = {

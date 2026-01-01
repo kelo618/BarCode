@@ -255,4 +255,312 @@
 //		//	std::string pattern;
 //	};
 //}
+namespace BarCode {
+	class Code128 final : public CodeBarcode {
+		using CodeBarcode::CodeBarcode;
+
+	protected:
+		enum class Action { OUTPUT, SWITCH_A, SWITCH_B, SWITCH_C };
+		enum class CodeSet { A, B, C };
+		// =========================
+		// 1. 输入合法性校验（Set B）
+		// =========================
+		bool isValidChar(char c) const override {
+			unsigned char uc = static_cast<unsigned char>(c);
+			return uc >= 0 && uc <= 127;
+		}
+		// =========================
+		// 2. 准备内部编码数据
+		//    （这里只做“语义准备”）
+		// =========================
+		std::string prepareEncodedData(
+			const std::string& userData) const override
+		{
+			// 对于 baseline Set B：
+			// 不做任何转换，直接返回
+			return userData;
+		}
+		// =========================
+		// 3. 校验字符计算（返回 symbol value）
+		// =========================
+		char calculateCheckDigit(const std::string& encoded) override {
+			return 0;
+		}
+		// =========================
+		// 4. 构建条码元素
+		// =========================
+		void buildElements(const std::string& data) override {
+			elements.clear();
+			validateInput(data);
+
+			CodeSet currentSet = CodeSet::B;      // 默认 Start B
+			appendPattern(104);                   // START B
+			int checksum = 104;
+			int position = 1;
+
+			size_t i = 0;
+			while (i < data.size()) {
+				char c = data[i];
+				Action action = Action::OUTPUT;
+
+				// 判断是否可切换到 Set C
+				if (currentSet != CodeSet::C && canUseSetC(data, i)) {
+					action = Action::SWITCH_C;
+				}
+				else if (isControlChar(c) && currentSet != CodeSet::A) {
+					action = Action::SWITCH_A;
+				}
+				else if (!isControlChar(c) && currentSet == CodeSet::A) {
+					action = Action::SWITCH_B;  // 控制字符结束，切回 B
+				}
+
+				switch (action) {
+				case Action::SWITCH_C:
+					appendPattern(99); // CODE C
+					checksum += 99 * position++;
+					currentSet = CodeSet::C;
+					continue;
+
+				case Action::SWITCH_A:
+					appendPattern(101); // CODE A
+					checksum += 101 * position++;
+					currentSet = CodeSet::A;
+					continue;
+
+				case Action::SWITCH_B:
+					appendPattern(100); // CODE B
+					checksum += 100 * position++;
+					currentSet = CodeSet::B;
+					continue;
+
+				case Action::OUTPUT:
+					if (currentSet == CodeSet::C) {
+						int value = (data[i] - '0') * 10 + (data[i + 1] - '0');
+						appendPattern(value);
+						checksum += value * position++;
+						i += 2;
+
+						if (i < data.size() && !isdigit(data[i])) {
+							appendPattern(100); // CODE B
+							checksum += 100 * position++;
+							currentSet = CodeSet::B;
+						}
+					}
+					else {
+						int value = charToValue(c, currentSet);
+						appendPattern(value);
+						checksum += value * position++;
+						i++;
+					}
+					break;
+				}
+			}
+
+			// 校验和
+			checksum %= 103;
+			appendPattern(checksum);
+
+			// STOP
+			appendPattern(106);
+		}
+		// =========================
+		// 5. 人类可读文本（可选）
+		// =========================
+		void addLabels() override {
+			if (!_showLabels) return;
+
+			int textY = barHeight + guardExtension + 10;
+			int x = quietZone * moduleWidth;
+
+			size_t eIndex = 0; // 元素索引
+
+			for (size_t i = 0; i < fullData.size(); ++i) {
+				char c = fullData[i];
+				if (c < 32 || c > 126) continue; // 控制字符不显示
+
+				// 累计这个字符对应的总宽度
+				int charWidth = 0;
+
+				// 每个字符对应 6~8 个元素
+				int patternsPerChar = 6; // Code128 每个字符有 6 个条/空模块对（固定）
+				for (int p = 0; p < patternsPerChar && eIndex < elements.size(); ++p) {
+					charWidth += elements[eIndex].modules * moduleWidth;
+					eIndex++;
+				}
+
+				// 居中绘制
+				cv::putText(barcodeImage,
+					std::string(1, c),
+					cv::Point(x + charWidth / 2, textY),
+					cv::FONT_HERSHEY_SIMPLEX,
+					fontScale,
+					cv::Scalar(0),
+					fontThickness);
+
+				x += charWidth;
+			}
+		}
+	private:
+		static inline const std::array<std::string, 107> CODE128_PATTERNS = {
+			/*  0 */ "212222",
+			/*  1 */ "222122",
+			/*  2 */ "222221",
+			/*  3 */ "121223",
+			/*  4 */ "121322",
+			/*  5 */ "131222",
+			/*  6 */ "122213",
+			/*  7 */ "122312",
+			/*  8 */ "132212",
+			/*  9 */ "221213",
+			/* 10 */ "221312",
+			/* 11 */ "231212",
+			/* 12 */ "112232",
+			/* 13 */ "122132",
+			/* 14 */ "122231",
+			/* 15 */ "113222",
+			/* 16 */ "123122",
+			/* 17 */ "123221",
+			/* 18 */ "223211",
+			/* 19 */ "221132",
+			/* 20 */ "221231",
+			/* 21 */ "213212",
+			/* 22 */ "223112",
+			/* 23 */ "312131",
+			/* 24 */ "311222",
+			/* 25 */ "321122",
+			/* 26 */ "321221",
+			/* 27 */ "312212",
+			/* 28 */ "322112",
+			/* 29 */ "322211",
+			/* 30 */ "212123",
+			/* 31 */ "212321",
+			/* 32 */ "232121",
+			/* 33 */ "111323",
+			/* 34 */ "131123",
+			/* 35 */ "131321",
+			/* 36 */ "112313",
+			/* 37 */ "132113",
+			/* 38 */ "132311",
+			/* 39 */ "211313",
+			/* 40 */ "231113",
+			/* 41 */ "231311",
+			/* 42 */ "112133",
+			/* 43 */ "112331",
+			/* 44 */ "132131",
+			/* 45 */ "113123",
+			/* 46 */ "113321",
+			/* 47 */ "133121",
+			/* 48 */ "313121",
+			/* 49 */ "211331",
+			/* 50 */ "231131",
+			/* 51 */ "213113",
+			/* 52 */ "213311",
+			/* 53 */ "213131",
+			/* 54 */ "311123",
+			/* 55 */ "311321",
+			/* 56 */ "331121",
+			/* 57 */ "312113",
+			/* 58 */ "312311",
+			/* 59 */ "332111",
+			/* 60 */ "314111",
+			/* 61 */ "221411",
+			/* 62 */ "431111",
+			/* 63 */ "111224",
+			/* 64 */ "111422",
+			/* 65 */ "121124",
+			/* 66 */ "121421",
+			/* 67 */ "141122",
+			/* 68 */ "141221",
+			/* 69 */ "112214",
+			/* 70 */ "112412",
+			/* 71 */ "122114",
+			/* 72 */ "122411",
+			/* 73 */ "142112",
+			/* 74 */ "142211",
+			/* 75 */ "241211",
+			/* 76 */ "221114",
+			/* 77 */ "413111",
+			/* 78 */ "241112",
+			/* 79 */ "134111",
+			/* 80 */ "111242",
+			/* 81 */ "121142",
+			/* 82 */ "121241",
+			/* 83 */ "114212",
+			/* 84 */ "124112",
+			/* 85 */ "124211",
+			/* 86 */ "411212",
+			/* 87 */ "421112",
+			/* 88 */ "421211",
+			/* 89 */ "212141",
+			/* 90 */ "214121",
+			/* 91 */ "412121",
+			/* 92 */ "111143",
+			/* 93 */ "111341",
+			/* 94 */ "131141",
+			/* 95 */ "114113",
+			/* 96 */ "114311",
+			/* 97 */ "411113",
+			/* 98 */ "411311",
+			/* 99 */ "113141",
+			/*100 */ "114131",
+			/*101 */ "311141",
+			/*102 */ "411131",
+			/*103 */ "211412", // Start A
+			/*104 */ "211214", // Start B
+			/*105 */ "211232", // Start C
+			/*106 */ "2331112" // Stop (7 elements)
+		};
+		// =========================
+		// 常量定义
+		// =========================
+		static constexpr int START_B = 104;
+		static constexpr int STOP = 106;
+
+		bool isControlChar(char c) const {
+			return c >= 0 && c <= 31; // 控制字符需用 Set A
+		}
+		// =========================
+		// Pattern 转 CodeElement
+		// =========================
+		void appendSymbol(int symbolValue) {
+			const std::string& pattern = CODE128_PATTERNS[symbolValue];
+
+			bool isBar = true;
+			for (char c : pattern) {
+				elements.push_back({
+					isBar,
+					c - '0'
+					});
+				isBar = !isBar;
+			}
+		}
+
+		static bool canUseSetC(const std::string& s, size_t pos) {
+			size_t count = 0;
+			while (pos + count < s.size() && std::isdigit(s[pos + count]))
+				count++;
+
+			return count >= 4 && count % 2 == 0;
+		}
+
+		int charToValue(char c, CodeSet set) const {
+			if (set == CodeSet::A) {
+				if (c >= 0 && c <= 95) return (c <= 31) ? (c + 64) : (c - 32);
+			}
+			else if (set == CodeSet::B) {
+				return c - 32; // ASCII 32~127
+			}
+			return -1; // Set C handled separately
+		}
+		void appendPattern(int value) {
+			if (value < 0 || value > 106) return;
+			const std::string& pattern = CODE128_PATTERNS[value];
+			bool isBar = true;
+			for (char c : pattern) {
+				elements.push_back({ isBar, c - '0' });
+				isBar = !isBar;
+			}
+		}
+	};
+}
 #endif

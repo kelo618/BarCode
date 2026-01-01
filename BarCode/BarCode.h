@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #ifndef _EAN_H
 #define _EAN_H
 #include <opencv2/opencv.hpp>
@@ -6,9 +6,10 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+// EAN / Code ç³»åˆ—ç»Ÿä¸€æˆä¸€ä¸ªæ›´é«˜å±‚ Pipeline
 
 namespace BarCode {
-	// ÌõÂëÀàĞÍÃ¶¾Ù
+	// æ¡ç ç±»å‹æšä¸¾
 	enum class BarcodeType {
 		EAN8,
 		EAN13,
@@ -16,13 +17,13 @@ namespace BarCode {
 		Code93,
 		Code128
 	};
-	// ÌõĞÎÂë´óĞ¡Ã¶¾Ù
+	// æ¡å½¢ç å¤§å°æšä¸¾
 	enum class BarcodeSize {
-		MINIMUM,	// Ğ¡³ß´ç (Õ­Ìõ)
-		STANDARD,	// ÖĞµÈ³ß´ç
-		LARGE		// ´ó³ß´ç (¿íÌõ)
+		MINIMUM,	// å°å°ºå¯¸ (çª„æ¡)
+		STANDARD,	// ä¸­ç­‰å°ºå¯¸
+		LARGE		// å¤§å°ºå¯¸ (å®½æ¡)
 	};
-	// ³éÏó»ùÀà
+	// æŠ½è±¡åŸºç±»
 	class Barcode {
 	public:
 		virtual ~Barcode() = default;
@@ -34,18 +35,20 @@ namespace BarCode {
 				cv::imshow(barcode_name, barcodeImage);
 				cv::waitKey(0);
 			}
+			else throw std::runtime_error("Barcode image is empty. Please encode data first.");
 		}
 
 		virtual void save(const std::string& filename) {
 			if (!barcodeImage.empty())
 				cv::imwrite(filename, barcodeImage);
+			else throw std::runtime_error("Barcode image is empty. Please encode data first.");
 		}
 
 		cv::Mat getImage() const { return barcodeImage.clone(); }
 
 		virtual void showLabels(bool) {}
 	protected:
-		// »ù´¡»æÖÆ·½·¨
+		// åŸºç¡€ç»˜åˆ¶æ–¹æ³•
 		virtual	void initializeImage(int width, int height) {
 			barcodeImage = cv::Mat(height, width, CV_8UC1, cv::Scalar(255));
 		}
@@ -62,30 +65,46 @@ namespace BarCode {
 		virtual void addLabels() = 0;
 
 		virtual char calculateCheckDigit(const std::string& code) = 0;
-		// ³ß´ç²ÎÊıÉèÖÃ
+		// å°ºå¯¸å‚æ•°è®¾ç½®
 		virtual void setSizeParameters(BarcodeSize size) {
 			switch (size) {
 			case BarcodeSize::MINIMUM:
-				moduleWidth = 2; barHeight = 40; quietZone = 9; fontScale = 0.45; fontThickness = 1; break;
+				moduleWidth = 3;      // æœ€å°æ¡å®½ï¼Œä¿è¯ Code128 å¯æ‰«æ
+				barHeight = 50;     // è¶³å¤Ÿé«˜ï¼Œä¿è¯ EAN/Code ç³»åˆ—å¯è¯»
+				quietZone = 10;     // ISO æ¨è â‰¥9 modules
+				fontScale = 0.45;   // æ–‡å­—å¯è¯»
+				fontThickness = 1;
+				break;
+			case BarcodeSize::STANDARD:
+				moduleWidth = 4;
+				barHeight = 60;
+				quietZone = 11;
+				fontScale = 0.6;
+				fontThickness = 2;
+				break;
 			case BarcodeSize::LARGE:
-				moduleWidth = 4; barHeight = 80; quietZone = 15; fontScale = 0.7; fontThickness = 2; break;
-			default: // STANDARD
-				moduleWidth = 3; barHeight = 60; quietZone = 11; fontScale = 0.6; fontThickness = 2; break;
+				moduleWidth = 6;
+				barHeight = 100;
+				quietZone = 15;
+				fontScale = 0.8;
+				fontThickness = 2;
+				break;
 			}
 		}
+
 
 
 		std::string fullData;
 		cv::Mat barcodeImage;
 		int moduleWidth = 4;
 		int barHeight = 50;
-		int quietZone = 10; // EAN - 13 ±ê×¼ÒªÇó£º¾²Çø ¡İ 9 modules
+		int quietZone = 10; // EAN - 13 æ ‡å‡†è¦æ±‚ï¼šé™åŒº â‰¥ 9 modules
 		double fontScale = 0;
 		int fontThickness = 2;
-
+		int guardExtension = 8; // guardExtension >= moduleWidth * 2
 	};
 
-	// EANÏµÁĞ³éÏó»ùÀà
+	// EANç³»åˆ—æŠ½è±¡åŸºç±»
 	class EanBarcode : public Barcode {
 	public:
 		explicit EanBarcode(BarcodeSize size) {
@@ -104,10 +123,10 @@ namespace BarCode {
 		virtual void processData(const std::string& code) = 0;
 		virtual void generatePattern() = 0;
 
-		// ×ÓÀà±ØĞëÌá¹©£º·µ»ØµÚ i Î»Êı×ÖµÄÄ£¿éÖĞĞÄÎ»ÖÃ
+		// å­ç±»å¿…é¡»æä¾›ï¼šè¿”å›ç¬¬ i ä½æ•°å­—çš„æ¨¡å—ä¸­å¿ƒä½ç½®
 		virtual int getModuleCenterForDigit(size_t index) const = 0;
 
-		// Í³Ò»»æÖÆÎÄ×Ö
+		// ç»Ÿä¸€ç»˜åˆ¶æ–‡å­—
 		void addLabels() {
 			const int textY = barHeight + guardExtension + 15;
 
@@ -166,14 +185,17 @@ namespace BarCode {
 			}
 		}
 
-		// EANÍ¨ÓÃĞ£Ñé
+		// EANé€šç”¨æ ¡éªŒ
 		virtual void validateInput(const std::string& code) {
-			if (code.empty() || code.find_first_not_of("0123456789") != std::string::npos) {
+			if (code.empty())
+				throw std::invalid_argument("Barcode data is empty");
+
+			if (code.find_first_not_of("0123456789") != std::string::npos) {
 				throw std::invalid_argument("Invalid EAN characters");
 			}
 		}
 
-		// ±£»¤Ìõ¼ì²â
+		// ä¿æŠ¤æ¡æ£€æµ‹
 		bool isLeftGuard(size_t pos) const { return pos < 3; }
 		bool isCenterGuard(size_t pos) const { return (pos >= 45 && pos < 50); }
 		bool isRightGuard(size_t pos, size_t totalLength) const { return pos >= totalLength - 3; }
@@ -199,18 +221,20 @@ namespace BarCode {
 		}
 
 		std::string pattern;
-		int guardExtension = 8; // guardExtension >= moduleWidth * 2
 	};
 
-	// CodeÏµÁĞ³éÏó»ùÀà
+	// Codeç³»åˆ—æŠ½è±¡åŸºç±»
 	class CodeBarcode :public Barcode {
 	public:
 		explicit CodeBarcode(BarcodeSize size) {
 			setSizeParameters(size);
 		}
 
-		void encode(const std::string& data) override {
-			buildElements(data);
+		void encode(const std::string& data) final {
+			validateInput(data);           //  åªæ ¡éªŒç”¨æˆ·è¾“å…¥
+			fullData = prepareEncodedData(data);  // å†…éƒ¨è½¬æ¢
+			elements.clear();
+			buildElements(fullData);           // ç¼–ç ç”¨å®Œæ•´æ•°æ®
 			renderImage();
 			if (_showLabels)
 				addLabels();
@@ -221,14 +245,14 @@ namespace BarCode {
 		}
 	protected:
 		struct CodeElement {
-			bool isBar;     // true = ºÚÌõ, false = ¿Õ°×
-			int  modules;   // ¿í¶È£¨ÒÔ module Îªµ¥Î»£©
+			bool isBar;     // true = é»‘æ¡, false = ç©ºç™½
+			int  modules;   // å®½åº¦ï¼ˆä»¥ module ä¸ºå•ä½ï¼‰
 		};
 		std::vector<CodeElement> elements;
 
-		// ×ÓÀà±ØĞëÊµÏÖ£ºÊı¾İ ¡ú elements
+		// å­ç±»å¿…é¡»å®ç°ï¼šæ•°æ® â†’ elements
 		virtual void buildElements(const std::string& data) = 0;
-		// Code ÏµÁĞÍ³Ò»äÖÈ¾Âß¼­
+		// Code ç³»åˆ—ç»Ÿä¸€æ¸²æŸ“é€»è¾‘
 		void renderImage() override {
 			int totalModules = quietZone * 2;
 			for (const auto& e : elements)
@@ -260,7 +284,26 @@ namespace BarCode {
 			wideModule = wide;
 		}
 
-		//void addLabels() override {}
+		// Codeé€šç”¨æ ¡éªŒ
+		virtual void validateInput(const std::string& code) {
+			if (code.empty())
+				throw std::invalid_argument("Barcode data is empty");
+
+			for (char c : code) {
+				if (!isValidChar(c))
+					throw std::invalid_argument(
+						std::string("Invalid character: ") + c
+					);
+			}
+		}
+
+		virtual bool isValidChar(char c) const = 0;
+
+		virtual std::string prepareEncodedData(
+			const std::string& userData) const
+		{
+			return userData;
+		}
 
 		bool _showLabels = true;
 

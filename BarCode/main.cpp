@@ -37,15 +37,10 @@ int main() {
 	using namespace BarCode;
 	try
 	{
-		auto barcode = BarcodeFactory::create<Code39>(BarcodeSize::LARGE);
+		auto barcode = BarcodeFactory::create<EAN8>(BarcodeSize::MINIMUM);
 
 		try {
-			//auto* code = dynamic_cast<BarCode::Code39*>(barcode.get());
-			//code->encode("ABC-123");
-			//code->showLabels(true);
-			//code->show();
-			barcode->showLabels(true);
-			barcode->encode("HELLO-2024");
+			barcode->encode("7654321");
 			barcode->show();
 		}
 		catch (const std::exception& e) {
