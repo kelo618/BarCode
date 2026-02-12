@@ -5,7 +5,7 @@
  * 本文件定义了条形码生成库的公共抽象接口，包括：
  *  - Barcode      ：所有条形码类型的抽象基类
  *  - EanBarcode   ：EAN-8 / EAN-13 系列的公共基类
- *  - CodeBarcode  ：Code39 / Code93 / Code128 系列的公共基类
+ *  - CodeBarcode  ：Code39 / Code128 系列的公共基类
  *
  * 设计目标：
  *  - 提供统一、稳定的条形码编码与渲染接口
@@ -30,7 +30,7 @@
 #include <memory>
 
  /**
-  * @namespace BarCode
+  * @namespace barcode
   * @brief 条形码生成库的命名空间
   *
   * 所有条形码相关类型、枚举和类均定义在此命名空间中，
