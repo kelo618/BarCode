@@ -3,9 +3,12 @@
 namespace barcode
 {
 	/**
-	* @brief ÎªÌõÂëÊı¾İÌí¼ÓÆğÊ¼/½áÊø·û
-	* @param userData ÓÃ»§ÊäÈëÊı¾İ
-	* @return Ìí¼Ó '*' °ü¹üºóµÄÍêÕûÊı¾İ
+		for (size_t index = 0; index < data.size(); ++index) {
+			char c = data[index];
+			if (index + 1 < data.size()) {
+				elements.push_back({ false, 1 });
+			}
+	* @return æ·»åŠ  '*' åŒ…è£¹åçš„å®Œæ•´æ•°æ®
 	*/
 	std::string Code39::prepareEncodedData(const std::string& userData) const
 	{
@@ -13,8 +16,8 @@ namespace barcode
 	}
 
 	/**
-	* @brief ¸ù¾İÊı¾İÉú³ÉÌõÂëÔªËØ£¨¿íÕ­ÌõÊı×é£©
-	* @param data ÒÑ´¦ÀíµÄÍêÕûÊı¾İ£¨º¬ÆğÖ¹·û£©
+	* @brief æ ¹æ®æ•°æ®ç”Ÿæˆæ¡ç å…ƒç´ ï¼ˆå®½çª„æ¡æ•°ç»„ï¼‰
+	* @param data å·²å¤„ç†çš„å®Œæ•´æ•°æ®ï¼ˆå«èµ·æ­¢ç¬¦ï¼‰
 	*/
 	void Code39::buildElements(const std::string& data) {
 		for (char c : data) {
@@ -24,19 +27,19 @@ namespace barcode
 				int width = (pattern[i] == 'w') ? wideModule : narrowModule;
 				elements.push_back({ isBar, width });
 			}
-			// ×Ö·û¼äÕ­¿Õ°×
+			// å­—ç¬¦é—´çª„ç©ºç™½
 			elements.push_back({ false, 1 });
 		}
 	}
 
 	/**
-	* @brief ÔÚÌõÂëÏÂ·½ÏÔÊ¾×Ö·û±êÇ©
+	* @brief åœ¨æ¡ç ä¸‹æ–¹æ˜¾ç¤ºå­—ç¬¦æ ‡ç­¾
 	*/
 	void Code39::addLabels() {
 		if (fullData.empty()) return;
 
-		// ÎÄ×ÖÏÔÊ¾ÔÚÌõÂëÏÂ·½
-		int labelHeight = 25; // ¿É¸ù¾İ fontScale µ÷Õû
+		// æ–‡å­—æ˜¾ç¤ºåœ¨æ¡ç ä¸‹æ–¹
+		int labelHeight = 25; // å¯æ ¹æ® fontScale è°ƒæ•´
 		int y = barHeight + labelHeight;
 		int x = quietZone * moduleWidth;
 
@@ -47,14 +50,14 @@ namespace barcode
 				std::string(1, c),
 				cv::Point(x, y), cv::FONT_HERSHEY_SIMPLEX,
 				fontScale, cv::Scalar(0), fontThickness);
-			x += narrowModule * 9 * moduleWidth; // Code39Ã¿×Ö·û9Ä£¿é
+			x += narrowModule * 9 * moduleWidth; // Code39æ¯å­—ç¬¦9æ¨¡å—
 		}
 	}
 
 	/**
-	* @brief ÑéÖ¤×Ö·ûÊÇ·ñ¿ÉÓÃÓÚ Code39
-	* @param c ´ıÑéÖ¤×Ö·û
-	* @return true ¿ÉÓÃ£¬false ²»¿ÉÓÃ
+	* @brief éªŒè¯å­—ç¬¦æ˜¯å¦å¯ç”¨äº Code39
+	* @param c å¾…éªŒè¯å­—ç¬¦
+	* @return true å¯ç”¨ï¼Œfalse ä¸å¯ç”¨
 	*/
 	bool Code39::isValidChar(char c) const {
 		static const std::string charset =
@@ -63,9 +66,9 @@ namespace barcode
 	}
 
 	/**
-	* @brief Ğ£ÑéÊäÈëÊı¾İºÏ·¨ĞÔ
-	* @param data ÓÃ»§ÊäÈëÊı¾İ
-	* @throw std::invalid_argument °üº¬ '*' »ò·Ç·¨×Ö·ûÊ±Å×³ö
+	* @brief æ ¡éªŒè¾“å…¥æ•°æ®åˆæ³•æ€§
+	* @param data ç”¨æˆ·è¾“å…¥æ•°æ®
+	* @throw std::invalid_argument åŒ…å« '*' æˆ–éæ³•å­—ç¬¦æ—¶æŠ›å‡º
 	*/
 	void Code39::validateInput(const std::string& data) {
 		CodeBarcode::validateInput(data);
@@ -77,13 +80,13 @@ namespace barcode
 	}
 
 	/**
-	* @brief Code39 ²»Ê¹ÓÃĞ£ÑéÎ»
+	* @brief Code39 ä¸ä½¿ç”¨æ ¡éªŒä½
 	*/
 	char Code39::calculateCheckDigit(const std::string& code) { throw std::logic_error("This Code barcode does not use a check digit"); }
 
 	/**
-	 * @brief Code39 ×Ö·û¶ÔÓ¦µÄ±àÂë±í
-	 * 'n' = Õ­Ìõ/Õ­¿Õ£¬'w' = ¿íÌõ/¿í¿Õ
+	 * @brief Code39 å­—ç¬¦å¯¹åº”çš„ç¼–ç è¡¨
+	 * 'n' = çª„æ¡/çª„ç©ºï¼Œ'w' = å®½æ¡/å®½ç©º
 	 */
 	const std::unordered_map<char, std::string> Code39::CODE39_TABLE = {
 	{'0', "nnnwwnwnn"}, {'1', "wnnwnnnnw"}, {'2', "nnwwnnnnw"}, {'3', "wnwwnnnnn"},
@@ -99,7 +102,7 @@ namespace barcode
 	{'Y', "wwnnwnnnn"}, {'Z', "nwwnwnnnn"},
 	{'-', "nwnnnnwnw"}, {'.', "wwnnnnwnn"}, {' ', "nwwnnnwnn"}, {'$', "nwnwnwnnn"},
 	{'/', "nwnwnnnwn"}, {'+', "nwnnnwnwn"}, {'%', "nnnwnwnwn"},
-	{'*', "nwnnwnwnn"} // ÆğÊ¼/ÖÕÖ¹·û
+	{'*', "nwnnwnwnn"} // èµ·å§‹/ç»ˆæ­¢ç¬¦
 	};
 }
 

@@ -6,60 +6,60 @@
 namespace barcode {
 	/**
 	 * @class Code39
-	 * @brief Code 39 ÌõĞÎÂëÉú³ÉÀà
+	 * @brief Code 39 æ¡å½¢ç ç”Ÿæˆç±»
 	 *
-	 * Code 39 ÊÇÒ»ÖÖ¹ã·ºÓ¦ÓÃµÄ×ÖÄ¸Êı×ÖÌõÂë£¬Ö§³ÖÊı×Ö¡¢×ÖÄ¸¼°²¿·ÖÌØÊâ·ûºÅ¡£
-	 * ÌØĞÔ£º
-	 *  - Ã¿×Ö·û 9 Ä£¿é£¨¿í/Õ­Ìõ£©
-	 *  - ×Ô¶¯Ìí¼ÓÆğÊ¼/½áÊø·û '*'
-	 *  - ¿ÉÑ¡ÔñÏÔÊ¾»òÒş²ØÊı×Ö/×Ö·û±êÇ© (_showLabels)
-	 *  - ²»Ö§³ÖĞ£ÑéÎ»
+	 * Code 39 æ˜¯ä¸€ç§å¹¿æ³›åº”ç”¨çš„å­—æ¯æ•°å­—æ¡ç ï¼Œæ”¯æŒæ•°å­—ã€å­—æ¯åŠéƒ¨åˆ†ç‰¹æ®Šç¬¦å·ã€‚
+	 * ç‰¹æ€§ï¼š
+	 *  - æ¯å­—ç¬¦ 9 æ¨¡å—ï¼ˆå®½/çª„æ¡ï¼‰
+	 *  - è‡ªåŠ¨æ·»åŠ èµ·å§‹/ç»“æŸç¬¦ '*'
+	 *  - å¯é€‰æ‹©æ˜¾ç¤ºæˆ–éšè—æ•°å­—/å­—ç¬¦æ ‡ç­¾ (_showLabels)
+	 *  - ä¸æ”¯æŒæ ¡éªŒä½
 	 */
 	class Code39 : public CodeBarcode {
 		using CodeBarcode::CodeBarcode;
 
 	protected:
 		/**
-		 * @brief ÎªÌõÂëÊı¾İÌí¼ÓÆğÊ¼/½áÊø·û
-		 * @param userData ÓÃ»§ÊäÈëÊı¾İ
-		 * @return Ìí¼Ó '*' °ü¹üºóµÄÍêÕûÊı¾İ
+		 * @brief ä¸ºæ¡ç æ•°æ®æ·»åŠ èµ·å§‹/ç»“æŸç¬¦
+		 * @param userData ç”¨æˆ·è¾“å…¥æ•°æ®
+		 * @return æ·»åŠ  '*' åŒ…è£¹åçš„å®Œæ•´æ•°æ®
 		 */
 		std::string prepareEncodedData(
 			const std::string& userData) const override;
 
 		/**
-		 * @brief ¸ù¾İÊı¾İÉú³ÉÌõÂëÔªËØ£¨¿íÕ­ÌõÊı×é£©
-		 * @param data ÒÑ´¦ÀíµÄÍêÕûÊı¾İ£¨º¬ÆğÖ¹·û£©
+		 * @brief æ ¹æ®æ•°æ®ç”Ÿæˆæ¡ç å…ƒç´ ï¼ˆå®½çª„æ¡æ•°ç»„ï¼‰
+		 * @param data å·²å¤„ç†çš„å®Œæ•´æ•°æ®ï¼ˆå«èµ·æ­¢ç¬¦ï¼‰
 		 */
 		void buildElements(const std::string& data) override;
 
 		/**
-		 * @brief ÔÚÌõÂëÏÂ·½ÏÔÊ¾×Ö·û±êÇ©
+		 * @brief åœ¨æ¡ç ä¸‹æ–¹æ˜¾ç¤ºå­—ç¬¦æ ‡ç­¾
 		 */
 		void addLabels() override;
 
 		/**
-		 * @brief ÑéÖ¤×Ö·ûÊÇ·ñ¿ÉÓÃÓÚ Code39
-		 * @param c ´ıÑéÖ¤×Ö·û
-		 * @return true ¿ÉÓÃ£¬false ²»¿ÉÓÃ
+		char calculateCheckDigit(const std::string& code) override;
+		 * @param c å¾…éªŒè¯å­—ç¬¦
+		 * @return true å¯ç”¨ï¼Œfalse ä¸å¯ç”¨
 		 */
 		bool isValidChar(char c) const override;
 
 		/**
-		 * @brief Ğ£ÑéÊäÈëÊı¾İºÏ·¨ĞÔ
-		 * @param data ÓÃ»§ÊäÈëÊı¾İ
-		 * @throw std::invalid_argument °üº¬ '*' »ò·Ç·¨×Ö·ûÊ±Å×³ö
+		 * @brief æ ¡éªŒè¾“å…¥æ•°æ®åˆæ³•æ€§
+		 * @param data ç”¨æˆ·è¾“å…¥æ•°æ®
+		 * @throw std::invalid_argument åŒ…å« '*' æˆ–éæ³•å­—ç¬¦æ—¶æŠ›å‡º
 		 */
 		void validateInput(const std::string& data) override;
 	private:
 		/**
-		 * @brief Code39 ×Ö·û¶ÔÓ¦µÄ±àÂë±í
-		 * 'n' = Õ­Ìõ/Õ­¿Õ£¬'w' = ¿íÌõ/¿í¿Õ
+		 * @brief Code39 å­—ç¬¦å¯¹åº”çš„ç¼–ç è¡¨
+		 * 'n' = çª„æ¡/çª„ç©ºï¼Œ'w' = å®½æ¡/å®½ç©º
 		 */
 		static const std::unordered_map<char, std::string> CODE39_TABLE;
 
 		/**
-		 * @brief Code39 ²»Ê¹ÓÃĞ£ÑéÎ»
+		 * @brief Code39 ä¸ä½¿ç”¨æ ¡éªŒä½
 		 */
 		char calculateCheckDigit(const std::string& code);;
 	};
