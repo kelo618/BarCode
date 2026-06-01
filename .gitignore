@@ -32,3 +32,18 @@
 *.app
 
 .vs/
+*.user
+*.ipdb
+*.iobj
+*.pdb
+*.ilk
+*.recipe
+*.tlog
+*.log
+*.exp
+*.idb
+
+# Build directories
+build/
+x64/
+BarCode/x64/

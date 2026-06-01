@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef _CODE39_H
 #define _CODE39_H
 #include "BarCode.h"
@@ -15,7 +15,7 @@ namespace barcode {
 	 *  - 可选择显示或隐藏数字/字符标签 (_showLabels)
 	 *  - 不支持校验位
 	 */
-	class Code39 : public CodeBarcode {
+	class BARCODE_API Code39 : public CodeBarcode {
 		using CodeBarcode::CodeBarcode;
 
 	protected:
@@ -39,7 +39,7 @@ namespace barcode {
 		void addLabels() override;
 
 		/**
-		char calculateCheckDigit(const std::string& code) override;
+		 * @brief 验证字符是否可用于 Code39
 		 * @param c 待验证字符
 		 * @return true 可用，false 不可用
 		 */
@@ -51,17 +51,14 @@ namespace barcode {
 		 * @throw std::invalid_argument 包含 '*' 或非法字符时抛出
 		 */
 		void validateInput(const std::string& data) override;
+
 	private:
-		/**
-		 * @brief Code39 字符对应的编码表
-		 * 'n' = 窄条/窄空，'w' = 宽条/宽空
-		 */
-		static const std::unordered_map<char, std::string> CODE39_TABLE;
+		static const std::unordered_map<char, std::string>& getTable();
 
 		/**
 		 * @brief Code39 不使用校验位
 		 */
-		char calculateCheckDigit(const std::string& code);;
+		char calculateCheckDigit(const std::string& code) override;
 	};
 }
 #endif // !_CODE39_H

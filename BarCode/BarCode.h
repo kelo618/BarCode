@@ -28,6 +28,17 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <vector>
+
+#if defined(_WIN32) && defined(BARCODE_SHARED)
+#if defined(BARCODE_DLL_EXPORT)
+#define BARCODE_API __declspec(dllexport)
+#else
+#define BARCODE_API __declspec(dllimport)
+#endif
+#else
+#define BARCODE_API
+#endif
 
  /**
   * @namespace barcode
@@ -36,8 +47,7 @@
   * 所有条形码相关类型、枚举和类均定义在此命名空间中，
   * 用于避免与用户工程中的类型发生命名冲突。
   */
-namespace barcode {
-	/**
+namespace barcode {	/**
 	 * @enum BarcodeType
 	 * @brief 支持的条形码类型
 	 */
@@ -73,7 +83,7 @@ namespace barcode {
 	 *  - encode() 由派生类实现具体编码流程
 	 *  - renderImage() / addLabels() 由派生类定制
 	 */
-	class Barcode {
+	class BARCODE_API Barcode {
 	public:
 		/// 虚析构函数，确保通过基类指针正确析构派生类
 		virtual ~Barcode() = default;
@@ -108,6 +118,18 @@ namespace barcode {
 		*/
 		cv::Mat getImage() const;
 
+		/// 获取编码后的完整数据（含校验位/起止符）
+		const std::string& getEncodedData() const;
+
+		/// 获取当前实际模块宽度（像素）
+		int getModuleWidth() const;
+
+		/// 获取当前静区宽度（模块数）
+		int getQuietZoneModules() const;
+
+		/// 获取当前条高（像素）
+		int getBarHeight() const;
+
 		/**
 		* @brief 是否显示可读标签
 		* @param enable 是否启用
@@ -138,6 +160,12 @@ namespace barcode {
 		*/
 		virtual void setSizeParameters(BarcodeSize size);
 
+		/// 根据符号总模块数解析模块宽度，避免过大/过小
+		int resolveModuleWidth(int totalModules) const;
+
+		/// 根据模块宽度解析条高，确保在可扫描范围内
+		int resolveBarHeight(int resolvedModuleWidth) const;
+
 	protected:
 		/* ===== 编码结果 ===== */
 
@@ -152,6 +180,13 @@ namespace barcode {
 		int moduleWidth = 4;			///< 单模块像素宽度
 		int barHeight = 50;				///< 条高度
 		int quietZone = 10;				///< 静区宽度（模块数）
+		int minModuleWidth = 2;			///< 最小模块宽度（像素）
+		int maxModuleWidth = 6;			///< 最大模块宽度（像素）
+		int minTotalWidthPx = 240;		///< 推荐最小总宽（像素）
+		int maxTotalWidthPx = 1400;		///< 推荐最大总宽（像素）
+		double barHeightRatio = 26.0;	///< 条高与模块宽比例
+		int minBarHeightPx = 56;		///< 最小条高（像素）
+		int maxBarHeightPx = 220;		///< 最大条高（像素）
 
 		/* ===== 文本渲染 ===== */
 
@@ -178,9 +213,10 @@ namespace barcode {
 	 *  - 公共渲染逻辑
 	 *  - 数字标签的居中绘制
 	 */
-	class EanBarcode : public Barcode {
+	class BARCODE_API EanBarcode : public Barcode {
 	public:
 		explicit EanBarcode(BarcodeSize size);
+		const std::string& getPattern() const;
 		/**
 		 * @brief 执行 EAN 条形码的完整编码流程
 		 *
@@ -246,7 +282,7 @@ namespace barcode {
 
 		/// 保护条检测
 		bool isLeftGuard(size_t pos) const;
-		bool isCenterGuard(size_t pos) const;
+		bool isCenterGuard(size_t pos, size_t totalLength) const;
 		bool isRightGuard(size_t pos, size_t totalLength) const;
 
 		static std::string L_encode(char c);
@@ -291,7 +327,7 @@ namespace barcode {
 	 *  - isValidChar()
 	 *  - （必要时）prepareEncodedData()
 	 */
-	class CodeBarcode :public Barcode {
+	class BARCODE_API CodeBarcode :public Barcode {
 	public:
 		/**
 		* @brief 构造 Code 系列条形码对象
@@ -430,6 +466,5 @@ namespace barcode {
 		int narrowModule = 1;		///< 窄条模块宽度
 		int wideModule = 3;			///< 宽条模块宽度
 	};
-};
-
+}
 #endif //  _VERSION_ONE == 1

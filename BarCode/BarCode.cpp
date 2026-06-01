@@ -1,10 +1,14 @@
-#include "BarCode.h"
+ï»¿#include "BarCode.h"
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <stdexcept>
 
 /**
-* @brief ÏÔÊ¾ÌõĞÎÂëÍ¼Ïñ£¨µ÷ÊÔ / GUI Ê¹ÓÃ£©
-* @param barcode_name ÏÔÊ¾´°¿ÚÃû³Æ
+* @brief æ˜¾ç¤ºæ¡å½¢ç å›¾åƒï¼ˆè°ƒè¯• / GUI ä½¿ç”¨ï¼‰
+* @param barcode_name æ˜¾ç¤ºçª—å£åç§°
 *
-* ÈôÔÚ encode() Ç°µ÷ÓÃ£¬½«Å×³öÒì³£¡£
+* è‹¥åœ¨ encode() å‰è°ƒç”¨ï¼Œå°†æŠ›å‡ºå¼‚å¸¸ã€‚
 */
 namespace barcode
 {
@@ -17,10 +21,10 @@ namespace barcode
 	}
 
 	/**
-	* @brief ½«ÌõĞÎÂëÍ¼Ïñ±£´æÎªÎÄ¼ş
-	* @param filename Êä³öÎÄ¼şÂ·¾¶
+	* @brief å°†æ¡å½¢ç å›¾åƒä¿å­˜ä¸ºæ–‡ä»¶
+	* @param filename è¾“å‡ºæ–‡ä»¶è·¯å¾„
 	*
-	* ÈôÔÚ encode() Ç°µ÷ÓÃ£¬½«Å×³öÒì³£¡£
+	* è‹¥åœ¨ encode() å‰è°ƒç”¨ï¼Œå°†æŠ›å‡ºå¼‚å¸¸ã€‚
 	*/
 	void Barcode::save(const std::string& filename) {
 		if (!barcodeImage.empty())
@@ -29,27 +33,44 @@ namespace barcode
 	}
 
 	/**
-	* @brief »ñÈ¡Éú³ÉµÄÌõĞÎÂëÍ¼Ïñ
-	* @return ÌõĞÎÂëÍ¼Ïñ£¨Éî¿½±´£©
+	* @brief è·å–ç”Ÿæˆçš„æ¡å½¢ç å›¾åƒ
+	* @return æ¡å½¢ç å›¾åƒï¼ˆæ·±æ‹·è´ï¼‰
 	*/
 	cv::Mat Barcode::getImage() const { return barcodeImage.clone(); }
 
+	const std::string& Barcode::getEncodedData() const {
+		return fullData;
+	}
+
+	int Barcode::getModuleWidth() const {
+		return moduleWidth;
+	}
+
+	int Barcode::getQuietZoneModules() const {
+		return quietZone;
+	}
+
+	int Barcode::getBarHeight() const {
+		return barHeight;
+	}
+
 	/**
-	* @brief ÊÇ·ñÏÔÊ¾¿É¶Á±êÇ©
-	* @param enable ÊÇ·ñÆôÓÃ
+	* @brief æ˜¯å¦æ˜¾ç¤ºå¯è¯»æ ‡ç­¾
+	* @param enable æ˜¯å¦å¯ç”¨
 	*
-	* ²¢·ÇËùÓĞÌõÂëÖÆ¶¼Ö§³Ö±êÇ©ÏÔÊ¾¡£
+	* å¹¶éæ‰€æœ‰æ¡ç åˆ¶éƒ½æ”¯æŒæ ‡ç­¾æ˜¾ç¤ºã€‚
 	*/
 	void Barcode::showLabels(bool enable) {
 		_showLabels = enable;
 	}
 
-	/// ³õÊ¼»¯¿Õ°×»­²¼
+	/// åˆå§‹åŒ–ç©ºç™½ç”»å¸ƒ
 	void Barcode::initializeImage(int width, int height) {
-		barcodeImage = cv::Mat(height, width, CV_8UC1, cv::Scalar(255));
+		barcodeImage.create(height, width, CV_8UC1);
+		barcodeImage.setTo(cv::Scalar(255));
 	}
 
-	/// »æÖÆµ¥¸öºÚÌõ
+	/// ç»˜åˆ¶å•ä¸ªé»‘æ¡
 	void Barcode::drawBar(int x, int width, int height) {
 		cv::rectangle(barcodeImage,
 			cv::Point(x, 0),
@@ -58,50 +79,94 @@ namespace barcode
 	}
 
 	/**
-	* @brief ÉèÖÃÌõĞÎÂë³ß´ç²ÎÊı
-	* @param size ³ß´çÃ¶¾Ù
+	* @brief è®¾ç½®æ¡å½¢ç å°ºå¯¸å‚æ•°
+	* @param size å°ºå¯¸æšä¸¾
 	*/
 	void Barcode::setSizeParameters(BarcodeSize size) {
 		switch (size) {
 		case BarcodeSize::MINIMUM:
-			moduleWidth = 3;      // ×îĞ¡Ìõ¿í£¬±£Ö¤ Code128 ¿ÉÉ¨Ãè
-			barHeight = 50;     // ×ã¹»¸ß£¬±£Ö¤ EAN/Code ÏµÁĞ¿É¶Á
-			quietZone = 10;     // ISO ÍÆ¼ö ¡İ9 modules
-			fontScale = 0.45;   // ÎÄ×Ö¿É¶Á
+			moduleWidth = 2;
+			quietZone = 10;
+			minModuleWidth = 2;
+			maxModuleWidth = 3;
+			minTotalWidthPx = 180;
+			maxTotalWidthPx = 680;
+			barHeightRatio = 24.0;
+			minBarHeightPx = 52;
+			maxBarHeightPx = 88;
+			fontScale = 0.45;
 			fontThickness = 1;
 			break;
 		case BarcodeSize::STANDARD:
-			moduleWidth = 4;
-			barHeight = 60;
+			moduleWidth = 3;
 			quietZone = 11;
-			fontScale = 0.6;
+			minModuleWidth = 2;
+			maxModuleWidth = 4;
+			minTotalWidthPx = 280;
+			maxTotalWidthPx = 920;
+			barHeightRatio = 26.0;
+			minBarHeightPx = 78;
+			maxBarHeightPx = 140;
+			fontScale = 0.60;
 			fontThickness = 2;
 			break;
 		case BarcodeSize::LARGE:
-			moduleWidth = 6;
-			barHeight = 100;
-			quietZone = 15;
-			fontScale = 0.8;
+			moduleWidth = 4;
+			quietZone = 12;
+			minModuleWidth = 3;
+			maxModuleWidth = 6;
+			minTotalWidthPx = 420;
+			maxTotalWidthPx = 1400;
+			barHeightRatio = 28.0;
+			minBarHeightPx = 112;
+			maxBarHeightPx = 220;
+			fontScale = 0.75;
 			fontThickness = 2;
 			break;
 		}
+
+		barHeight = resolveBarHeight(moduleWidth);
+		guardExtension = std::clamp(moduleWidth * 3, 6, 18);
+	}
+
+	int Barcode::resolveModuleWidth(int totalModules) const {
+		if (totalModules <= 0) return moduleWidth;
+
+		int resolved = moduleWidth;
+		int minByCanvas = (minTotalWidthPx + totalModules - 1) / totalModules;
+		int maxByCanvas = maxTotalWidthPx / totalModules;
+
+		resolved = std::max(resolved, minByCanvas);
+		if (maxByCanvas > 0) {
+			resolved = std::min(resolved, maxByCanvas);
+		}
+		return std::clamp(resolved, minModuleWidth, maxModuleWidth);
+	}
+
+	int Barcode::resolveBarHeight(int resolvedModuleWidth) const {
+		int height = static_cast<int>(std::lround(resolvedModuleWidth * barHeightRatio));
+		return std::clamp(height, minBarHeightPx, maxBarHeightPx);
 	}
 
 	EanBarcode::EanBarcode(BarcodeSize size) {
 		setSizeParameters(size);
 	}
 
+	const std::string& EanBarcode::getPattern() const {
+		return pattern;
+	}
+
 	/**
-	* @brief Ö´ĞĞ EAN ÌõĞÎÂëµÄÍêÕû±àÂëÁ÷³Ì
+	* @brief æ‰§è¡Œ EAN æ¡å½¢ç çš„å®Œæ•´ç¼–ç æµç¨‹
 	*
-	* ±àÂëÁ÷³Ì£º
-	*  1. ÊäÈëĞ£Ñé
-	*  2. Êı¾İ´¦Àí£¨²¹Ğ£ÑéÎ»µÈ£©
-	*  3. Éú³ÉÌõĞÎÂë±ÈÌØÄ£Ê½
-	*  4. äÖÈ¾ÌõĞÎÂëÍ¼Ïñ
-	*  5. »æÖÆ¿É¶ÁÎÄ±¾
+	* ç¼–ç æµç¨‹ï¼š
+	*  1. è¾“å…¥æ ¡éªŒ
+	*  2. æ•°æ®å¤„ç†ï¼ˆè¡¥æ ¡éªŒä½ç­‰ï¼‰
+	*  3. ç”Ÿæˆæ¡å½¢ç æ¯”ç‰¹æ¨¡å¼
+	*  4. æ¸²æŸ“æ¡å½¢ç å›¾åƒ
+	*  5. ç»˜åˆ¶å¯è¯»æ–‡æœ¬
 	*
-	* ÅÉÉúÀà²»Ó¦ÖØĞ´´Ëº¯Êı£¬¶øÓ¦ÊµÏÖ£º
+	* æ´¾ç”Ÿç±»ä¸åº”é‡å†™æ­¤å‡½æ•°ï¼Œè€Œåº”å®ç°ï¼š
 	*  - processData()
 	*  - generatePattern()
 	*/
@@ -114,32 +179,36 @@ namespace barcode
 	}
 
 	void EanBarcode::renderImage() {
-		const int totalWidth = (2 * quietZone + static_cast<int>(pattern.size())) * moduleWidth;
+		const int totalModules = 2 * quietZone + static_cast<int>(pattern.size());
+		moduleWidth = resolveModuleWidth(totalModules);
+		barHeight = resolveBarHeight(moduleWidth);
+		guardExtension = std::clamp(moduleWidth * 3, 6, 18);
+
+		const int totalWidth = totalModules * moduleWidth;
 		const int topMargin = 10;
 		const int bottomMargin = 10;
 		const int totalHeight =
 			barHeight + guardExtension + topMargin + bottomMargin;
 		initializeImage(totalWidth, totalHeight);
 
-		int baseX = quietZone * moduleWidth;
-
+		const int baseX = quietZone * moduleWidth;
 		for (size_t i = 0; i < pattern.size(); ++i) {
-			if (pattern[i] == '1') {
-				bool isGuard =
-					isLeftGuard(i) ||
-					isCenterGuard(i) ||
-					isRightGuard(i, pattern.size());
+			if (pattern[i] != '1') continue;
 
-				int height = isGuard
-					? barHeight + guardExtension
-					: barHeight;
+			bool isGuard =
+				isLeftGuard(i) ||
+				isCenterGuard(i, pattern.size()) ||
+				isRightGuard(i, pattern.size());
 
-				drawBar(
-					baseX + i * moduleWidth,
-					moduleWidth,
-					height
-				);
-			}
+			int height = isGuard
+				? barHeight + guardExtension
+				: barHeight;
+
+			drawBar(
+				baseX + static_cast<int>(i) * moduleWidth,
+				moduleWidth,
+				height
+			);
 		}
 	}
 
@@ -172,7 +241,7 @@ namespace barcode
 		}
 	}
 
-	/// EANÍ¨ÓÃĞ£Ñé
+	/// EANé€šç”¨æ ¡éªŒ
 	void EanBarcode::validateInput(const std::string& code) {
 		if (code.empty())
 			throw std::invalid_argument("Barcode data is empty");
@@ -182,78 +251,88 @@ namespace barcode
 		}
 	}
 
-	/// ±£»¤Ìõ¼ì²â
+	/// ä¿æŠ¤æ¡æ£€æµ‹
 	bool EanBarcode::isLeftGuard(size_t pos) const { return pos < 3; }
 
-	bool EanBarcode::isCenterGuard(size_t pos) const { return (pos >= 45 && pos < 50); }
+	bool EanBarcode::isCenterGuard(size_t pos, size_t totalLength) const {
+		// EAN-13: 95 modules, center guard at [45, 49]
+		if (totalLength == 95) return (pos >= 45 && pos < 50);
+		// EAN-8: 67 modules, center guard at [31, 35]
+		if (totalLength == 67) return (pos >= 31 && pos < 36);
+		return false;
+	}
 
 	bool EanBarcode::isRightGuard(size_t pos, size_t totalLength) const { return pos >= totalLength - 3; }
 
 	std::string EanBarcode::L_encode(char c) {
-		static const std::unordered_map<char, std::string> L = {
-			{ '0',"0001101" },{ '1',"0011001" },{ '2',"0010011" },
-			{ '3',"0111101" },{ '4',"0100011" },{ '5',"0110001" },
-			{ '6',"0101111" },{ '7',"0111011" },{ '8',"0110111" },
-			{ '9',"0001011" }
+		static constexpr std::array<const char*, 10> L = {
+			"0001101", "0011001", "0010011", "0111101", "0100011",
+			"0110001", "0101111", "0111011", "0110111", "0001011"
 		};
-		return L.at(c);
+		int idx = c - '0';
+		if (idx < 0 || idx > 9) {
+			throw std::invalid_argument("Invalid EAN digit");
+		}
+		return L[idx];
 	}
 
 	std::string EanBarcode::R_encode(char c) {
-		static const std::unordered_map<char, std::string> R = {
-			{ '0',"1110010" },{ '1',"1100110" },{ '2',"1101100" },
-			{ '3',"1000010" },{ '4',"1011100" },{ '5',"1001110" },
-			{ '6',"1010000" },{ '7',"1000100" },{ '8',"1001000" },
-			{ '9',"1110100" }
+		static constexpr std::array<const char*, 10> R = {
+			"1110010", "1100110", "1101100", "1000010", "1011100",
+			"1001110", "1010000", "1000100", "1001000", "1110100"
 		};
-		return R.at(c);
+		int idx = c - '0';
+		if (idx < 0 || idx > 9) {
+			throw std::invalid_argument("Invalid EAN digit");
+		}
+		return R[idx];
 	}
 
 	/**
-	* @brief ¹¹Ôì Code ÏµÁĞÌõĞÎÂë¶ÔÏó
-	* @param size ÌõĞÎÂë³ß´ç¹æ¸ñ
+	* @brief æ„é€  Code ç³»åˆ—æ¡å½¢ç å¯¹è±¡
+	* @param size æ¡å½¢ç å°ºå¯¸è§„æ ¼
 	*
-	* ¹¹Ôìº¯Êı»á¸ù¾İ³ß´çÃ¶¾Ù³õÊ¼»¯Ä£¿é¿í¶È¡¢
-	* Ìõ¸ß¶È¡¢¾²ÇøµÈ²ÎÊı¡£
+	* æ„é€ å‡½æ•°ä¼šæ ¹æ®å°ºå¯¸æšä¸¾åˆå§‹åŒ–æ¨¡å—å®½åº¦ã€
+	* æ¡é«˜åº¦ã€é™åŒºç­‰å‚æ•°ã€‚
 	*/
 	CodeBarcode::CodeBarcode(BarcodeSize size) {
 		setSizeParameters(size);
 	}
 
 	/**
-	* @brief Ö´ĞĞ Code ÏµÁĞÌõĞÎÂëµÄÍêÕû±àÂëÁ÷³Ì
-	* @param data ÓÃ»§ÊäÈëµÄÔ­Ê¼Êı¾İ
+	* @brief æ‰§è¡Œ Code ç³»åˆ—æ¡å½¢ç çš„å®Œæ•´ç¼–ç æµç¨‹
+	* @param data ç”¨æˆ·è¾“å…¥çš„åŸå§‹æ•°æ®
 	*
-	* ¸Ãº¯ÊıÎªÄ£°å·½·¨£¬¶¨ÒåÁË Code ÏµÁĞÌõĞÎÂëµÄÍ³Ò»±àÂëÁ÷³Ì¡£
-	* ÅÉÉúÀà²»Ó¦ÖØĞ´¸Ãº¯Êı£¬¶øÓ¦Í¨¹ıÊµÏÖ¹³×Óº¯ÊıÀ´×Ô¶¨ÒåĞĞÎª¡£
+	* è¯¥å‡½æ•°ä¸ºæ¨¡æ¿æ–¹æ³•ï¼Œå®šä¹‰äº† Code ç³»åˆ—æ¡å½¢ç çš„ç»Ÿä¸€ç¼–ç æµç¨‹ã€‚
+	* æ´¾ç”Ÿç±»ä¸åº”é‡å†™è¯¥å‡½æ•°ï¼Œè€Œåº”é€šè¿‡å®ç°é’©å­å‡½æ•°æ¥è‡ªå®šä¹‰è¡Œä¸ºã€‚
 	*
-	* ±àÂëÁ÷³Ì£º
-	*  1. validateInput()      ¡ª¡ª Ğ£ÑéÓÃ»§ÊäÈë
-	*  2. prepareEncodedData() ¡ª¡ª ÄÚ²¿Êı¾İ×¼±¸£¨ÈçÌí¼ÓÆğÖ¹·û£©
-	*  3. buildElements()      ¡ª¡ª ¹¹½¨Ìõ/¿Õ°×Ä£¿éĞòÁĞ
-	*  4. renderImage()        ¡ª¡ª äÖÈ¾ÌõĞÎÂë
-	*  5. addLabels()          ¡ª¡ª »æÖÆ¿É¶ÁÎÄ±¾£¨¿ÉÑ¡£©
+	* ç¼–ç æµç¨‹ï¼š
+	*  1. validateInput()      â€”â€” æ ¡éªŒç”¨æˆ·è¾“å…¥
+	*  2. prepareEncodedData() â€”â€” å†…éƒ¨æ•°æ®å‡†å¤‡ï¼ˆå¦‚æ·»åŠ èµ·æ­¢ç¬¦ï¼‰
+	*  3. buildElements()      â€”â€” æ„å»ºæ¡/ç©ºç™½æ¨¡å—åºåˆ—
+	*  4. renderImage()        â€”â€” æ¸²æŸ“æ¡å½¢ç 
+	*  5. addLabels()          â€”â€” ç»˜åˆ¶å¯è¯»æ–‡æœ¬ï¼ˆå¯é€‰ï¼‰
 	*/
 	void CodeBarcode::encode(const std::string& data) {
-		validateInput(data);					//  Ö»Ğ£ÑéÓÃ»§ÊäÈë
-		fullData = prepareEncodedData(data);	// ÄÚ²¿×ª»»
+		validateInput(data);					//  åªæ ¡éªŒç”¨æˆ·è¾“å…¥
+		fullData = prepareEncodedData(data);	// å†…éƒ¨è½¬æ¢
 		elements.clear();
-		buildElements(fullData);				// ±àÂëÓÃÍêÕûÊı¾İ
+		buildElements(fullData);				// ç¼–ç ç”¨å®Œæ•´æ•°æ®
 		renderImage();
 		if (_showLabels)
 			addLabels();
 	}
 
 	/**
-	* @brief ½«ÓÃ»§ÊäÈë×ª»»ÎªÄÚ²¿±àÂëÊı¾İ
-	* @param userData ÓÃ»§ÊäÈëÊı¾İ
-	* @return ÄÚ²¿±àÂëÊ¹ÓÃµÄÊı¾İ
+	* @brief å°†ç”¨æˆ·è¾“å…¥è½¬æ¢ä¸ºå†…éƒ¨ç¼–ç æ•°æ®
+	* @param userData ç”¨æˆ·è¾“å…¥æ•°æ®
+	* @return å†…éƒ¨ç¼–ç ä½¿ç”¨çš„æ•°æ®
 	*
-	* ¸Ãº¯ÊıÓÃÓÚ´¦ÀíÈç£º
-	*  - Ìí¼ÓÆğÊ¼/½áÊø·û
-	*  - ²åÈëĞ£Ñé×Ö·û
+	* è¯¥å‡½æ•°ç”¨äºå¤„ç†å¦‚ï¼š
+	*  - æ·»åŠ èµ·å§‹/ç»“æŸç¬¦
+	*  - æ’å…¥æ ¡éªŒå­—ç¬¦
 	*
-	* Ä¬ÈÏÊµÏÖÖ±½Ó·µ»Ø userData¡£
+	* é»˜è®¤å®ç°ç›´æ¥è¿”å› userDataã€‚
 	*/
 	std::string CodeBarcode::prepareEncodedData(const std::string& userData) const
 	{
@@ -261,11 +340,11 @@ namespace barcode
 	}
 
 	/**
-	* @brief Ğ£ÑéÓÃ»§ÊäÈëÊı¾İµÄºÏ·¨ĞÔ
-	* @param code ÓÃ»§ÊäÈëµÄÔ­Ê¼Êı¾İ
+	* @brief æ ¡éªŒç”¨æˆ·è¾“å…¥æ•°æ®çš„åˆæ³•æ€§
+	* @param code ç”¨æˆ·è¾“å…¥çš„åŸå§‹æ•°æ®
 	*
-	* Ä¬ÈÏÊµÏÖ»á¼ì²éÊı¾İÊÇ·ñÎª¿Õ£¬²¢Öğ×Ö·ûµ÷ÓÃ isValidChar()¡£
-	* ÅÉÉúÀà¿É¸ù¾İĞèÒªÖØĞ´¸Ãº¯Êı¡£
+	* é»˜è®¤å®ç°ä¼šæ£€æŸ¥æ•°æ®æ˜¯å¦ä¸ºç©ºï¼Œå¹¶é€å­—ç¬¦è°ƒç”¨ isValidChar()ã€‚
+	* æ´¾ç”Ÿç±»å¯æ ¹æ®éœ€è¦é‡å†™è¯¥å‡½æ•°ã€‚
 	*/
 	void CodeBarcode::validateInput(const std::string& code) {
 		if (code.empty())
@@ -280,25 +359,38 @@ namespace barcode
 	}
 
 	/**
-	* @brief ¸ù¾İÄ£¿éĞòÁĞäÖÈ¾ÌõĞÎÂëÍ¼Ïñ
+	* @brief æ ¹æ®æ¨¡å—åºåˆ—æ¸²æŸ“æ¡å½¢ç å›¾åƒ
 	*
-	* ¸ÃÊµÏÖÎª Code ÏµÁĞÌõĞÎÂëµÄÍ³Ò»äÖÈ¾Âß¼­£¬
-	* ¸ù¾İ elements ÖĞµÄÄ£¿é¿í¶ÈË³Ğò»æÖÆÌõÓë¿Õ°×¡£
+	* è¯¥å®ç°ä¸º Code ç³»åˆ—æ¡å½¢ç çš„ç»Ÿä¸€æ¸²æŸ“é€»è¾‘ï¼Œ
+	* æ ¹æ® elements ä¸­çš„æ¨¡å—å®½åº¦é¡ºåºç»˜åˆ¶æ¡ä¸ç©ºç™½ã€‚
 	*
-	* ÅÉÉúÀàÍ¨³£²»ĞèÒªÖØĞ´¸Ãº¯Êı¡£
+	* æ´¾ç”Ÿç±»é€šå¸¸ä¸éœ€è¦é‡å†™è¯¥å‡½æ•°ã€‚
 	*/
 	void CodeBarcode::renderImage() {
 		int totalModules = quietZone * 2;
 		for (const auto& e : elements)
 			totalModules += e.modules;
 
-		int extraHeight = _showLabels ? static_cast<int>(fontScale * 40) + 10 : 0;
-		int totalHeight = barHeight + extraHeight;
+		moduleWidth = resolveModuleWidth(totalModules);
+		barHeight = resolveBarHeight(moduleWidth);
 
+		int extraHeight = 0;
+		if (_showLabels) {
+			int baseline = 0;
+			cv::Size textSize = cv::getTextSize(
+				"1234567890",
+				cv::FONT_HERSHEY_SIMPLEX,
+				fontScale,
+				fontThickness,
+				&baseline
+			);
+			extraHeight = textSize.height + baseline + 10;
+		}
+
+		int totalHeight = barHeight + extraHeight;
 		initializeImage(totalModules * moduleWidth, totalHeight);
 
 		int x = quietZone * moduleWidth;
-
 		for (const auto& e : elements) {
 			if (e.isBar) {
 				drawBar(x, e.modules * moduleWidth, barHeight);
@@ -308,10 +400,10 @@ namespace barcode
 	}
 
 	/**
-	* @brief Çå¿Õµ±Ç°±àÂë×´Ì¬
+	* @brief æ¸…ç©ºå½“å‰ç¼–ç çŠ¶æ€
 	*
-	* Çå³ıÄÚ²¿±àÂëÊı¾İ¡¢Ä£¿éĞòÁĞºÍÍ¼Ïñ»º´æ£¬
-	* Í¨³£ÓÃÓÚÖØĞÂ±àÂëÇ°µÄ×´Ì¬ÖØÖÃ¡£
+	* æ¸…é™¤å†…éƒ¨ç¼–ç æ•°æ®ã€æ¨¡å—åºåˆ—å’Œå›¾åƒç¼“å­˜ï¼Œ
+	* é€šå¸¸ç”¨äºé‡æ–°ç¼–ç å‰çš„çŠ¶æ€é‡ç½®ã€‚
 	*/
 	void CodeBarcode::clear() {
 		fullData.clear();
@@ -320,16 +412,15 @@ namespace barcode
 	}
 
 	/**
-	* @brief ÉèÖÃÕ­ÌõÓë¿íÌõµÄÄ£¿é¿í¶È
-	* @param narrow Õ­ÌõÄ£¿é¿í¶È
-	* @param wide   ¿íÌõÄ£¿é¿í¶È
+	* @brief è®¾ç½®çª„æ¡ä¸å®½æ¡çš„æ¨¡å—å®½åº¦
+	* @param narrow çª„æ¡æ¨¡å—å®½åº¦
+	* @param wide   å®½æ¡æ¨¡å—å®½åº¦
 	*
-	* Ö÷ÒªÓÃÓÚ Code39 / Code93 µÈÖ§³Ö¿íÕ­ÌõµÄÂëÖÆ¡£
-	* ¶Ô Code128 µÈ¹Ì¶¨Ä£¿é¿í¶ÈµÄÂëÖÆ¿ÉÄÜÎŞĞ§¡£
+	* ä¸»è¦ç”¨äº Code39 / Code93 ç­‰æ”¯æŒå®½çª„æ¡çš„ç åˆ¶ã€‚
+	* å¯¹ Code128 ç­‰å›ºå®šæ¨¡å—å®½åº¦çš„ç åˆ¶å¯èƒ½æ— æ•ˆã€‚
 	*/
 	void CodeBarcode::setBarWidth(int narrow, int wide) {
 		narrowModule = narrow;
 		wideModule = wide;
 	}
 }
-

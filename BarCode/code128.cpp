@@ -1,20 +1,22 @@
-#include "code128.h"
+ï»¿#include "code128.h"
+#include <cctype>
+#include <stdexcept>
 
 namespace barcode {
 	/**
-	* @brief Ğ£Ñé×Ö·ûÊÇ·ñ¿ÉÓÃÓÚ Code128£¨Set B »ùÏß£©
-	* @param c ´ıÑéÖ¤×Ö·û
-	* @return true ¿ÉÓÃ£¬false ²»¿ÉÓÃ
+	* @brief æ ¡éªŒå­—ç¬¦æ˜¯å¦å¯ç”¨äº Code128ï¼ˆSet B åŸºçº¿ï¼‰
+	* @param c å¾…éªŒè¯å­—ç¬¦
+	* @return true å¯ç”¨ï¼Œfalse ä¸å¯ç”¨
 	*/
 	bool Code128::isValidChar(char c) const {
 		unsigned char uc = static_cast<unsigned char>(c);
-		return uc >= 0 && uc <= 127;
+		return uc <= 127;
 	}
 
 	/**
-	* @brief ×¼±¸ÄÚ²¿±àÂëÊı¾İ£¨Set B baseline£©
-	* @param userData ÓÃ»§ÊäÈë×Ö·û´®
-	* @return ÄÚ²¿±àÂëÊı¾İ£¨¿ÉÄÜÓëÊäÈëÏàÍ¬£©
+	* @brief å‡†å¤‡å†…éƒ¨ç¼–ç æ•°æ®ï¼ˆSet B baselineï¼‰
+	* @param userData ç”¨æˆ·è¾“å…¥å­—ç¬¦ä¸²
+	* @return å†…éƒ¨ç¼–ç æ•°æ®ï¼ˆå¯èƒ½ä¸è¾“å…¥ç›¸åŒï¼‰
 	*/
 	std::string Code128::prepareEncodedData(const std::string& userData) const
 	{
@@ -22,25 +24,27 @@ namespace barcode {
 	}
 
 	/**
-	* @brief ¼ÆËãĞ£Ñé·û£¨·µ»Ø symbol value£©
-	* @param encoded ÄÚ²¿±àÂëÊı¾İ
-	* @return Ğ£ÑéÂë symbol value
+	* @brief è®¡ç®—æ ¡éªŒç¬¦ï¼ˆè¿”å› symbol valueï¼‰
+	* @param encoded å†…éƒ¨ç¼–ç æ•°æ®
+	* @return æ ¡éªŒç  symbol value
 	*/
 	char Code128::calculateCheckDigit(const std::string& encoded) {
-		return 0;
+		(void)encoded;
+		throw std::logic_error("Code128::calculateCheckDigit is not used directly; checksum is computed in buildElements");
 	}
 
 	/**
-	* @brief ¹¹½¨ÌõÂëÔªËØÊı×é
-	* @param data ÄÚ²¿±àÂëÊı¾İ
+	* @brief æ„å»ºæ¡ç å…ƒç´ æ•°ç»„
+	* @param data å†…éƒ¨ç¼–ç æ•°æ®
 	*/
 	void Code128::buildElements(const std::string& data) {
 		elements.clear();
+		elements.reserve(data.size() * 8 + 32);
 		validateInput(data);
 
-		CodeSet currentSet = CodeSet::B;      // Ä¬ÈÏ Start B
-		appendPattern(104);                   // START B
-		int checksum = 104;
+		CodeSet currentSet = CodeSet::B;      // é»˜è®¤ Start B
+		appendPattern(START_B);               // START B
+		int checksum = START_B;
 		int position = 1;
 
 		size_t i = 0;
@@ -48,7 +52,7 @@ namespace barcode {
 			char c = data[i];
 			Action action = Action::OUTPUT;
 
-			// ÅĞ¶ÏÊÇ·ñ¿ÉÇĞ»»µ½ Set C
+			// åˆ¤æ–­æ˜¯å¦å¯åˆ‡æ¢åˆ° Set C
 			if (currentSet != CodeSet::C && canUseSetC(data, i)) {
 				action = Action::SWITCH_C;
 			}
@@ -56,7 +60,7 @@ namespace barcode {
 				action = Action::SWITCH_A;
 			}
 			else if (!isControlChar(c) && currentSet == CodeSet::A) {
-				action = Action::SWITCH_B;  // ¿ØÖÆ×Ö·û½áÊø£¬ÇĞ»Ø B
+				action = Action::SWITCH_B;  // æ§åˆ¶å­—ç¬¦ç»“æŸï¼Œåˆ‡å› B
 			}
 
 			switch (action) {
@@ -85,7 +89,7 @@ namespace barcode {
 					checksum += value * position++;
 					i += 2;
 
-					if (i < data.size() && !isdigit(data[i])) {
+					if (i < data.size() && !std::isdigit(static_cast<unsigned char>(data[i]))) {
 						appendPattern(100); // CODE B
 						checksum += 100 * position++;
 						currentSet = CodeSet::B;
@@ -101,7 +105,7 @@ namespace barcode {
 			}
 		}
 
-		// Ğ£ÑéºÍ
+		// æ ¡éªŒå’Œ
 		checksum %= 103;
 		appendPattern(checksum);
 
@@ -110,59 +114,59 @@ namespace barcode {
 	}
 
 	/**
-	* @brief ÔÚÌõÂëÏÂ·½»æÖÆ¿É¶Á×Ö·û
+	* @brief åœ¨æ¡ç ä¸‹æ–¹ç»˜åˆ¶å¯è¯»å­—ç¬¦
 	*/
 	void Code128::addLabels() {
 		if (!_showLabels) return;
 
-		int textY = barHeight + guardExtension + 10;
-		int x = quietZone * moduleWidth;
-
-		size_t eIndex = 0; // ÔªËØË÷Òı
-
-		for (size_t i = 0; i < fullData.size(); ++i) {
-			char c = fullData[i];
-			if (c < 32 || c > 126) continue; // ¿ØÖÆ×Ö·û²»ÏÔÊ¾
-
-			// ÀÛ¼ÆÕâ¸ö×Ö·û¶ÔÓ¦µÄ×Ü¿í¶È
-			int charWidth = 0;
-
-			// Ã¿¸ö×Ö·û¶ÔÓ¦ 6~8 ¸öÔªËØ
-			int patternsPerChar = 6; // Code128 Ã¿¸ö×Ö·ûÓĞ 6 ¸öÌõ/¿ÕÄ£¿é¶Ô£¨¹Ì¶¨£©
-			for (int p = 0; p < patternsPerChar && eIndex < elements.size(); ++p) {
-				charWidth += elements[eIndex].modules * moduleWidth;
-				eIndex++;
-			}
-
-			// ¾ÓÖĞ»æÖÆ
-			cv::putText(barcodeImage,
-				std::string(1, c),
-				cv::Point(x + charWidth / 2, textY),
-				cv::FONT_HERSHEY_SIMPLEX,
-				fontScale,
-				cv::Scalar(0),
-				fontThickness);
-
-			x += charWidth;
+		std::string printable;
+		printable.reserve(fullData.size());
+		for (char c : fullData) {
+			unsigned char uc = static_cast<unsigned char>(c);
+			if (uc >= 32 && uc <= 126) printable.push_back(c);
 		}
+		if (printable.empty()) return;
+
+		int baseline = 0;
+		cv::Size textSize = cv::getTextSize(
+			printable,
+			cv::FONT_HERSHEY_SIMPLEX,
+			fontScale,
+			fontThickness,
+			&baseline
+		);
+
+		int textX = (barcodeImage.cols - textSize.width) / 2;
+		int textY = barHeight + textSize.height + 6;
+		cv::putText(
+			barcodeImage,
+			printable,
+			cv::Point(textX, textY),
+			cv::FONT_HERSHEY_SIMPLEX,
+			fontScale,
+			cv::Scalar(0),
+			fontThickness
+		);
 	}
 
 	/**
-	* @brief ÅĞ¶Ï×Ö·ûÊÇ·ñÎª¿ØÖÆ×Ö·û£¨ĞèÓÃ Set A£©
-	* @param c ´ıÅĞ¶Ï×Ö·û
-	* @return true ¿ØÖÆ×Ö·û
+	* @brief åˆ¤æ–­å­—ç¬¦æ˜¯å¦ä¸ºæ§åˆ¶å­—ç¬¦ï¼ˆéœ€ç”¨ Set Aï¼‰
+	* @param c å¾…åˆ¤æ–­å­—ç¬¦
+	* @return true æ§åˆ¶å­—ç¬¦
 	*/
 	bool Code128::isControlChar(char c) const {
-		return c >= 0 && c <= 31; // ¿ØÖÆ×Ö·ûĞèÓÃ Set A
+		unsigned char uc = static_cast<unsigned char>(c);
+		return uc <= 31; // æ§åˆ¶å­—ç¬¦éœ€ç”¨ Set A
 	}
 
 	/**
-	* @brief ½« symbol value ×ª»»ÎªÌõÂëÔªËØ²¢Ìí¼Óµ½ elements
-	* @param value symbol value£¨0~106£©
+	* @brief å°† symbol value è½¬æ¢ä¸ºæ¡ç å…ƒç´ å¹¶æ·»åŠ åˆ° elements
+	* @param value symbol valueï¼ˆ0~106ï¼‰
 	*/
 	void Code128::appendPattern(int value) {
 		if (value < 0 || value > 106) return;
-		const std::string& pattern = CODE128_PATTERNS[value];
+		const std::string& pattern = getTable()[value];
+		//std::cout << pattern << std::endl;
 		bool isBar = true;
 		for (char c : pattern) {
 			elements.push_back({ isBar, c - '0' });
@@ -171,50 +175,54 @@ namespace barcode {
 	}
 
 	/**
-	* @brief ½«×Ö·û×ª»»Îª CodeSet ÄÚ²¿ value
-	* @param c ×Ö·û
-	* @param set µ±Ç° CodeSet
-	* @return ÄÚ²¿ value
+	* @brief å°†å­—ç¬¦è½¬æ¢ä¸º CodeSet å†…éƒ¨ value
+	* @param c å­—ç¬¦
+	* @param set å½“å‰ CodeSet
+	* @return å†…éƒ¨ value
 	*/
 	int Code128::charToValue(char c, CodeSet set) const {
+		unsigned char uc = static_cast<unsigned char>(c);
 		if (set == CodeSet::A) {
-			if (c >= 0 && c <= 95) return (c <= 31) ? (c + 64) : (c - 32);
+			if (uc <= 95) return (uc <= 31) ? (uc + 64) : (uc - 32);
 		}
 		else if (set == CodeSet::B) {
-			return c - 32; // ASCII 32~127
+			if (uc >= 32 && uc <= 127) return uc - 32;
 		}
 		return -1; // Set C handled separately
 	}
 
 	/**
-	* @brief ÅĞ¶Ïµ±Ç°Î»ÖÃÊÇ·ñ¿ÉÇĞ»»µ½ Set C£¨Êı×ÖÑ¹Ëõ£©
-	* @param s Êı¾İ×Ö·û´®
-	* @param pos µ±Ç°Ë÷Òı
-	* @return true ¿ÉÒÔÇĞ»»
+	* @brief åˆ¤æ–­å½“å‰ä½ç½®æ˜¯å¦å¯åˆ‡æ¢åˆ° Set Cï¼ˆæ•°å­—å‹ç¼©ï¼‰
+	* @param s æ•°æ®å­—ç¬¦ä¸²
+	* @param pos å½“å‰ç´¢å¼•
+	* @return true å¯ä»¥åˆ‡æ¢
 	*/
 	bool Code128::canUseSetC(const std::string& s, size_t pos) {
 		size_t count = 0;
-		while (pos + count < s.size() && std::isdigit(s[pos + count]))
+		while (pos + count < s.size() && std::isdigit(static_cast<unsigned char>(s[pos + count])))
 			count++;
 
 		return count >= 4 && count % 2 == 0;
 	}
 
-	const std::array<std::string, 107> Code128::CODE128_PATTERNS = {
-	"212222","222122","222221","121223","121322","131222","122213","122312",
-	"132212","221213","221312","231212","112232","122132","122231","113222",
-	"123122","123221","223211","221132","221231","213212","223112","312131",
-	"311222","321122","321221","312212","322112","322211","212123","212321",
-	"232121","111323","131123","131321","112313","132113","132311","211313",
-	"231113","231311","112133","112331","132131","113123","113321","133121",
-	"313121","211331","231131","213113","213311","213131","311123","311321",
-	"331121","312113","312311","332111","314111","221411","431111","111224",
-	"111422","121124","121421","141122","141221","112214","112412","122114",
-	"122411","142112","142211","241211","221114","413111","241112","134111",
-	"111242","121142","121241","114212","124112","124211","411212","421112",
-	"421211","212141","214121","412121","111143","111341","131141","114113",
-	"114311","411113","411311","113141","114131","311141","411131","211412",
-	"211214","211232","2331112"
-	};
+	const std::array<std::string, 107>& Code128::getTable()
+	{
+		static const std::array<std::string, 107> CODE128_PATTERNS = {
+		"212222","222122","222221","121223","121322","131222","122213","122312",
+		"132212","221213","221312","231212","112232","122132","122231","113222",
+		"123122","123221","223211","221132","221231","213212","223112","312131",
+		"311222","321122","321221","312212","322112","322211","212123","212321",
+		"232121","111323","131123","131321","112313","132113","132311","211313",
+		"231113","231311","112133","112331","132131","113123","113321","133121",
+		"313121","211331","231131","213113","213311","213131","311123","311321",
+		"331121","312113","312311","332111","314111","221411","431111","111224",
+		"111422","121124","121421","141122","141221","112214","112412","122114",
+		"122411","142112","142211","241211","221114","413111","241112","134111",
+		"111242","121142","121241","114212","124112","124211","411212","421112",
+		"421211","212141","214121","412121","111143","111341","131141","114113",
+		"114311","411113","411311","113141","114131","311141","411131","211412",
+		"211214","211232","2331112"
+		};
+		return CODE128_PATTERNS;
+	}
 }
-

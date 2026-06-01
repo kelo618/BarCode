@@ -1,63 +1,66 @@
-#include "ean8.h"
+ï»¿#include "ean8.h"
+#include <array>
 
 namespace barcode {
 	/**
-	* @brief ´¦ÀíÊäÈëÊı¾İ£¬¼ÆËãĞ£ÑéÎ»
-	* @param code ÓÃ»§ÊäÈëµÄ 7 Î»Êı×Ö
-	* @throw std::invalid_argument ÊäÈë³¤¶È²»Îª 7 Ê±Å×³ö
+	* @brief å¤„ç†è¾“å…¥æ•°æ®ï¼Œè®¡ç®—æ ¡éªŒä½
+	* @param code ç”¨æˆ·è¾“å…¥çš„ 7 ä½æ•°å­—
+	* @throw std::invalid_argument è¾“å…¥é•¿åº¦ä¸ä¸º 7 æ—¶æŠ›å‡º
 	*/
 	void EAN8::processData(const std::string& code) {
-		if (code.length() != 7) throw std::invalid_argument("EAN-8ĞèÒª7Î»ÊäÈë");
+		if (code.length() != 7) throw std::invalid_argument("EAN-8éœ€è¦7ä½è¾“å…¥");
 		fullData = code + calculateCheckDigit(code);
 	}
 
 	/**
-	* @brief Éú³ÉÌõĞÎÂëµÄ±ÈÌØÄ£Ê½£¨'0' ¿Õ°×, '1' ºÚÌõ£©
+	* @brief ç”Ÿæˆæ¡å½¢ç çš„æ¯”ç‰¹æ¨¡å¼ï¼ˆ'0' ç©ºç™½, '1' é»‘æ¡ï¼‰
 	*
-	* ×ó²à 4 Î»Ê¹ÓÃ L Âë£¬ÓÒ²à 4 Î»Ê¹ÓÃ R Âë
-	* »¤ÌõºÍÖĞ¼ä·Ö¸ô·û°´ÕÕ EAN-8 ±ê×¼»æÖÆ
+	* å·¦ä¾§ 4 ä½ä½¿ç”¨ L ç ï¼Œå³ä¾§ 4 ä½ä½¿ç”¨ R ç 
+	* æŠ¤æ¡å’Œä¸­é—´åˆ†éš”ç¬¦æŒ‰ç…§ EAN-8 æ ‡å‡†ç»˜åˆ¶
 	*/
 	void EAN8::generatePattern() {
 		pattern.clear();
-		pattern += "101"; // ×ó»¤Ìõ
+		pattern.reserve(67);
+		pattern += "101"; // å·¦æŠ¤æ¡
 
-		// ×ó²à4Î»£¨L±àÂë£©
+		// å·¦ä¾§4ä½ï¼ˆLç¼–ç ï¼‰
 		for (int i = 0; i < 4; ++i) {
 			pattern += L_encode(fullData[i]);
 		}
 
-		pattern += "01010"; // ÖĞ¼ä»¤Ìõ
+		pattern += "01010"; // ä¸­é—´æŠ¤æ¡
 
-		// ÓÒ²à4Î»£¨R±àÂë£©
+		// å³ä¾§4ä½ï¼ˆRç¼–ç ï¼‰
 		for (int i = 4; i < 8; ++i) {
 			pattern += R_encode(fullData[i]);
 		}
 
-		pattern += "101"; // ÓÒ»¤Ìõ
+		pattern += "101"; // å³æŠ¤æ¡
 	}
 
 	/**
-	* @brief »ñÈ¡Ö¸¶¨Êı×ÖµÄÄ£¿éÖĞĞÄ X ×ø±ê
-	* @param index Êı×ÖÔÚ fullData ÖĞµÄË÷Òı (0~7)
-	* @return Ä£¿éÖĞĞÄÏñËØ×ø±ê
+	* @brief è·å–æŒ‡å®šæ•°å­—çš„æ¨¡å—ä¸­å¿ƒ X åæ ‡
+	* @param index æ•°å­—åœ¨ fullData ä¸­çš„ç´¢å¼• (0~7)
+	* @return æ¨¡å—ä¸­å¿ƒåƒç´ åæ ‡
 	*/
 	int EAN8::getModuleCenterForDigit(size_t index) const {
 		const int xBase = quietZone * moduleWidth;
+		const int idx = static_cast<int>(index);
 
-		if (index < 4) { // ×ó²à4Î»
-			int moduleStart = 3 + index * 7;
-			return xBase + (moduleStart + 3.5) * moduleWidth;
+		if (idx < 4) { // å·¦ä¾§4ä½
+			int moduleStart = 3 + idx * 7;
+			return xBase + ((moduleStart * 2 + 7) * moduleWidth) / 2;
 		}
-		else { // ÓÒ²à4Î»
-			int moduleStart = 36 + (index - 4) * 7; // ÖĞ»¤À¸ºó
-			return xBase + (moduleStart + 3.5) * moduleWidth;
+		else { // å³ä¾§4ä½
+			int moduleStart = 36 + (idx - 4) * 7; // ä¸­æŠ¤æ å
+			return xBase + ((moduleStart * 2 + 7) * moduleWidth) / 2;
 		}
 	}
 
 	/**
-	* @brief ¼ÆËãÊäÈë 7 Î»Êı×ÖµÄĞ£ÑéÎ»
-	* @param code 7 Î»Êı×Ö×Ö·û´®
-	* @return Ğ£ÑéÎ»×Ö·û '0'~'9'
+	* @brief è®¡ç®—è¾“å…¥ 7 ä½æ•°å­—çš„æ ¡éªŒä½
+	* @param code 7 ä½æ•°å­—å­—ç¬¦ä¸²
+	* @return æ ¡éªŒä½å­—ç¬¦ '0'~'9'
 	*/
 	char EAN8::calculateCheckDigit(const std::string& code) {
 		constexpr std::array<int, 7> weights = { 3,1,3,1,3,1,3 };

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #ifndef _EAN_8_H
 #define _EAN_8_H
 #include "BarCode.h"
@@ -6,48 +6,48 @@
 namespace barcode {
 	/**
 	* @class EAN8
-	* @brief EAN-8 ÌõĞÎÂë¾ßÌåÊµÏÖÀà
+	* @brief EAN-8 æ¡å½¢ç å…·ä½“å®ç°ç±»
 	*
-	* ÌØµã£º
-	*  - ³¤¶È¹Ì¶¨Îª 7 Î»ÊäÈë£¬×Ô¶¯¼ÆËãĞ£ÑéÎ»
-	*  - ¼Ì³Ğ EanBarcode£¬ÊµÏÖ EAN-8 ÌØÓĞ±àÂëÂß¼­
-	*  - ±êÇ©ÎÄ×Ö¾ÓÖĞÏÔÊ¾£¨¿ÉÍ¨¹ı showLabels ¿ØÖÆ£©
+	* ç‰¹ç‚¹ï¼š
+	*  - é•¿åº¦å›ºå®šä¸º 7 ä½è¾“å…¥ï¼Œè‡ªåŠ¨è®¡ç®—æ ¡éªŒä½
+	*  - ç»§æ‰¿ EanBarcodeï¼Œå®ç° EAN-8 ç‰¹æœ‰ç¼–ç é€»è¾‘
+	*  - æ ‡ç­¾æ–‡å­—å±…ä¸­æ˜¾ç¤ºï¼ˆå¯é€šè¿‡ showLabels æ§åˆ¶ï¼‰
 	*/
-	class EAN8 final : public EanBarcode {
+	class BARCODE_API EAN8 final : public EanBarcode {
 	public:
 		/**
-		 * @brief Ê¹ÓÃÖ¸¶¨ÌõÂë³ß´ç´´½¨ EAN-8 ¶ÔÏó
-		 * @param size ÌõÂë³ß´çÃ¶¾Ù£¨MINIMUM/STANDARD/LARGE£©
+		 * @brief ä½¿ç”¨æŒ‡å®šæ¡ç å°ºå¯¸åˆ›å»º EAN-8 å¯¹è±¡
+		 * @param size æ¡ç å°ºå¯¸æšä¸¾ï¼ˆMINIMUM/STANDARD/LARGEï¼‰
 		 */
 		using EanBarcode::EanBarcode;
 
 	protected:
 		/**
-		 * @brief ´¦ÀíÊäÈëÊı¾İ£¬¼ÆËãĞ£ÑéÎ»
-		 * @param code ÓÃ»§ÊäÈëµÄ 7 Î»Êı×Ö
-		 * @throw std::invalid_argument ÊäÈë³¤¶È²»Îª 7 Ê±Å×³ö
+		 * @brief å¤„ç†è¾“å…¥æ•°æ®ï¼Œè®¡ç®—æ ¡éªŒä½
+		 * @param code ç”¨æˆ·è¾“å…¥çš„ 7 ä½æ•°å­—
+		 * @throw std::invalid_argument è¾“å…¥é•¿åº¦ä¸ä¸º 7 æ—¶æŠ›å‡º
 		 */
 		void processData(const std::string& code) override;
 
 		/**
-		 * @brief Éú³ÉÌõĞÎÂëµÄ±ÈÌØÄ£Ê½£¨'0' ¿Õ°×, '1' ºÚÌõ£©
+		 * @brief ç”Ÿæˆæ¡å½¢ç çš„æ¯”ç‰¹æ¨¡å¼ï¼ˆ'0' ç©ºç™½, '1' é»‘æ¡ï¼‰
 		 *
-		 * ×ó²à 4 Î»Ê¹ÓÃ L Âë£¬ÓÒ²à 4 Î»Ê¹ÓÃ R Âë
-		 * »¤ÌõºÍÖĞ¼ä·Ö¸ô·û°´ÕÕ EAN-8 ±ê×¼»æÖÆ
+		 * å·¦ä¾§ 4 ä½ä½¿ç”¨ L ç ï¼Œå³ä¾§ 4 ä½ä½¿ç”¨ R ç 
+		 * æŠ¤æ¡å’Œä¸­é—´åˆ†éš”ç¬¦æŒ‰ç…§ EAN-8 æ ‡å‡†ç»˜åˆ¶
 		 */
 		void generatePattern() override;
 
 		/**
-		* @brief »ñÈ¡Ö¸¶¨Êı×ÖµÄÄ£¿éÖĞĞÄ X ×ø±ê
-		* @param index Êı×ÖÔÚ fullData ÖĞµÄË÷Òı (0~7)
-		* @return Ä£¿éÖĞĞÄÏñËØ×ø±ê
+		* @brief è·å–æŒ‡å®šæ•°å­—çš„æ¨¡å—ä¸­å¿ƒ X åæ ‡
+		* @param index æ•°å­—åœ¨ fullData ä¸­çš„ç´¢å¼• (0~7)
+		* @return æ¨¡å—ä¸­å¿ƒåƒç´ åæ ‡
 		*/
 		int getModuleCenterForDigit(size_t index) const override;
 
 		/**
-		* @brief ¼ÆËãÊäÈë 7 Î»Êı×ÖµÄĞ£ÑéÎ»
-		* @param code 7 Î»Êı×Ö×Ö·û´®
-		* @return Ğ£ÑéÎ»×Ö·û '0'~'9'
+		* @brief è®¡ç®—è¾“å…¥ 7 ä½æ•°å­—çš„æ ¡éªŒä½
+		* @param code 7 ä½æ•°å­—å­—ç¬¦ä¸²
+		* @return æ ¡éªŒä½å­—ç¬¦ '0'~'9'
 		*/
 		char calculateCheckDigit(const std::string& code) override;
 	};

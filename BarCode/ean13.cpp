@@ -1,96 +1,103 @@
-#include "ean13.h"
+ï»¿#include "ean13.h"
+#include <array>
 
 namespace barcode {
 	/**
-	* @brief ´¦ÀíÊäÈëÊı¾İ£¬Éú³ÉÍêÕûÌõÂëÊı¾İ£¨°üº¬Ğ£ÑéÎ»£©
-	* @param code 12Î»Êı×Ö×Ö·û´®
-	* @throw std::invalid_argument ÊäÈë³¤¶È²»ÊÇ12Ê±Å×³öÒì³£
+	* @brief å¤„ç†è¾“å…¥æ•°æ®ï¼Œç”Ÿæˆå®Œæ•´æ¡ç æ•°æ®ï¼ˆåŒ…å«æ ¡éªŒä½ï¼‰
+	* @param code 12ä½æ•°å­—å­—ç¬¦ä¸²
+	* @throw std::invalid_argument è¾“å…¥é•¿åº¦ä¸æ˜¯12æ—¶æŠ›å‡ºå¼‚å¸¸
 	*/
 	void EAN13::processData(const std::string& code) {
-		if (code.length() != 12) throw std::invalid_argument("ĞèÒª12Î»Êı×Ö");
+		if (code.length() != 12) throw std::invalid_argument("éœ€è¦12ä½æ•°å­—");
 		fullData = code + calculateCheckDigit(code);
 	}
 
 	/**
-	* @brief Éú³ÉÌõĞÎÂë±àÂëÄ£Ê½£¨pattern£©£¬°üº¬»¤À¸¡¢ÖĞ¼äÌõºÍ×óÓÒ±àÂë
+	* @brief ç”Ÿæˆæ¡å½¢ç ç¼–ç æ¨¡å¼ï¼ˆpatternï¼‰ï¼ŒåŒ…å«æŠ¤æ ã€ä¸­é—´æ¡å’Œå·¦å³ç¼–ç 
 	*/
 	void EAN13::generatePattern() {
-		pattern.clear();
-		static const std::unordered_map<char, std::string> parityMap = {
-			{ '0',"LLLLLL" },{ '1',"LLGLGG" },{ '2',"LLGGLG" },
-			{ '3',"LLGGGL" },{ '4',"LGLLGG" },{ '5',"LGGLLG" },
-			{ '6',"LGGGLL" },{ '7',"LGLGLG" },{ '8',"LGLGGL" },
-			{ '9',"LGGLGL" }
+		static constexpr std::array<const char*, 10> PARITY = {
+			"LLLLLL", "LLGLGG", "LLGGLG", "LLGGGL", "LGLLGG",
+			"LGGLLG", "LGGGLL", "LGLGLG", "LGLGGL", "LGGLGL"
 		};
 
-		pattern = "101"; // ×ó»¤Ìõ
-		const auto& parity = parityMap.at(fullData[0]);
+		pattern.clear();
+		pattern.reserve(95);
+		pattern = "101"; // å·¦æŠ¤æ¡
 
-		// ×ó²àÊı¾İ
+		const int first = fullData[0] - '0';
+		if (first < 0 || first > 9) {
+			throw std::invalid_argument("Invalid EAN-13 lead digit");
+		}
+		const char* parity = PARITY[first];
+
+		// å·¦ä¾§æ•°æ®
 		for (int i = 0; i < 6; ++i) {
 			pattern += (parity[i] == 'L') ? L_encode(fullData[i + 1]) : G_encode(fullData[i + 1]);
 		}
 
-		pattern += "01010"; // ÖĞ¼ä»¤Ìõ
+		pattern += "01010"; // ä¸­é—´æŠ¤æ¡
 
-		// ÓÒ²àÊı¾İ
+		// å³ä¾§æ•°æ®
 		for (int i = 7; i < 13; ++i) {
 			pattern += R_encode(fullData[i]);
 		}
 
-		pattern += "101"; // ÓÒ»¤Ìõ
+		pattern += "101"; // å³æŠ¤æ¡
 	}
 
 	/**
-	* @brief »ñÈ¡Êı×ÖÔÚÌõĞÎÂëÉÏµÄÖĞĞÄÎ»ÖÃ£¨x×ø±ê£©
-	* @param index Êı×ÖË÷Òı£¬0~12£¨0ÎªÊ×Î»£¬²»ÏÔÊ¾ÔÚÌõÂëÄÚ£©
-	* @return ¶ÔÓ¦Ä£¿éÖĞĞÄ x ×ø±ê
+	* @brief è·å–æ•°å­—åœ¨æ¡å½¢ç ä¸Šçš„ä¸­å¿ƒä½ç½®ï¼ˆxåæ ‡ï¼‰
+	* @param index æ•°å­—ç´¢å¼•ï¼Œ0~12ï¼ˆ0ä¸ºé¦–ä½ï¼Œä¸æ˜¾ç¤ºåœ¨æ¡ç å†…ï¼‰
+	* @return å¯¹åº”æ¨¡å—ä¸­å¿ƒ x åæ ‡
 	*/
 	int EAN13::getModuleCenterForDigit(size_t index) const {
 		const int xBase = quietZone * moduleWidth;
+		const int idx = static_cast<int>(index);
 
-		if (index == 0) { // Ê×Î»Êı×Ö£¨ÔÚ×ó»¤À¸Íâ£©
+		if (idx == 0) { // é¦–ä½æ•°å­—ï¼ˆåœ¨å·¦æŠ¤æ å¤–ï¼‰
 			int startGuardWidth = 3 * moduleWidth;
 			return xBase - startGuardWidth / 2;
 		}
-		else if (index >= 1 && index <= 6) { // ×ó²à6Î»
-			int moduleStart = 3 + (index - 1) * 7;
-			return xBase + (moduleStart + 3.5) * moduleWidth;
+		else if (idx >= 1 && idx <= 6) { // å·¦ä¾§6ä½
+			int moduleStart = 3 + (idx - 1) * 7;
+			return xBase + ((moduleStart * 2 + 7) * moduleWidth) / 2;
 		}
-		else if (index >= 7 && index <= 12) { // ÓÒ²à6Î»
-			int moduleStart = 50 + (index - 7) * 7;
-			return xBase + (moduleStart + 3.5) * moduleWidth;
+		else if (idx >= 7 && idx <= 12) { // å³ä¾§6ä½
+			int moduleStart = 50 + (idx - 7) * 7;
+			return xBase + ((moduleStart * 2 + 7) * moduleWidth) / 2;
 		}
 		return xBase;
 	}
 
 	/**
-	* @brief ¼ÆËã EAN-13 Ğ£ÑéÎ»
-	* @param code 12 Î»Êı×Ö×Ö·û´®
-	* @return Ğ£ÑéÎ»×Ö·û
+	* @brief è®¡ç®— EAN-13 æ ¡éªŒä½
+	* @param code 12 ä½æ•°å­—å­—ç¬¦ä¸²
+	* @return æ ¡éªŒä½å­—ç¬¦
 	*/
 	char EAN13::calculateCheckDigit(const std::string& code) {
 		int sum = 0;
 		for (int i = 0; i < 12; ++i) {
-			int digit = code[11 - i] - '0';   // ´ÓÓÒÍù×ó
+			int digit = code[11 - i] - '0';   // ä»å³å¾€å·¦
 			sum += (i % 2 == 0) ? digit * 3 : digit;
 		}
 		return '0' + ((10 - (sum % 10)) % 10);
 	}
 
 	/**
-	* @brief G Âë±í±àÂë
-	* @param c Êı×Ö×Ö·û '0'~'9'
-	* @return 7Î»±àÂë×Ö·û´®
+	* @brief G ç è¡¨ç¼–ç 
+	* @param c æ•°å­—å­—ç¬¦ '0'~'9'
+	* @return 7ä½ç¼–ç å­—ç¬¦ä¸²
 	*/
 	std::string EAN13::G_encode(char c) {
-		static const std::unordered_map<char, std::string> G = {
-			{ '0',"0100111" },{ '1',"0110011" },{ '2',"0011011" },
-			{ '3',"0100001" },{ '4',"0011101" },{ '5',"0111001" },
-			{ '6',"0000101" },{ '7',"0010001" },{ '8',"0001001" },
-			{ '9',"0010111" }
+		static constexpr std::array<const char*, 10> G = {
+			"0100111", "0110011", "0011011", "0100001", "0011101",
+			"0111001", "0000101", "0010001", "0001001", "0010111"
 		};
-		return G.at(c);
+		int idx = c - '0';
+		if (idx < 0 || idx > 9) {
+			throw std::invalid_argument("Invalid EAN digit");
+		}
+		return G[idx];
 	}
 }
-

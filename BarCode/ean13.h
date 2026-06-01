@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #ifndef _EAN_13_H
 #define _EAN_13_H
 #include "BarCode.h"
@@ -6,52 +6,52 @@
 namespace barcode {
 	/**
 	* @class EAN13
-	* @brief EAN-13 ÌõĞÎÂëÉú³ÉÀà
+	* @brief EAN-13 æ¡å½¢ç ç”Ÿæˆç±»
 	*
-	* EAN-13 ÊÇ¹ú¼ÊÉÏ¹ã·ºÊ¹ÓÃµÄÉÌÆ·ÌõĞÎÂë£¬±àÂë12Î»Êı×ÖÊı¾İ + 1Î»Ğ£ÑéÎ»¡£
-	* ¸ÃÀà¼Ì³Ğ×Ô EanBarcode£¬Ìá¹©ÍêÕûµÄÌõÂëÉú³ÉºÍ¿ÉÑ¡±êÇ©ÏÔÊ¾¹¦ÄÜ¡£
+	* EAN-13 æ˜¯å›½é™…ä¸Šå¹¿æ³›ä½¿ç”¨çš„å•†å“æ¡å½¢ç ï¼Œç¼–ç 12ä½æ•°å­—æ•°æ® + 1ä½æ ¡éªŒä½ã€‚
+	* è¯¥ç±»ç»§æ‰¿è‡ª EanBarcodeï¼Œæä¾›å®Œæ•´çš„æ¡ç ç”Ÿæˆå’Œå¯é€‰æ ‡ç­¾æ˜¾ç¤ºåŠŸèƒ½ã€‚
 	*
-	* ¹¦ÄÜÌØĞÔ£º
-	*  - Ö§³Ö×Ô¶¯¼ÆËãĞ£ÑéÎ»
-	*  - Ö§³Ö L/G/R ±àÂë¹æÔò
-	*  - ¿ÉÑ¡ÔñÏÔÊ¾»òÒş²ØÊı×Ö±êÇ© (_showLabels)
+	* åŠŸèƒ½ç‰¹æ€§ï¼š
+	*  - æ”¯æŒè‡ªåŠ¨è®¡ç®—æ ¡éªŒä½
+	*  - æ”¯æŒ L/G/R ç¼–ç è§„åˆ™
+	*  - å¯é€‰æ‹©æ˜¾ç¤ºæˆ–éšè—æ•°å­—æ ‡ç­¾ (_showLabels)
 	*/
-	class EAN13 final : public EanBarcode {
+	class BARCODE_API EAN13 final : public EanBarcode {
 	public:
 		using EanBarcode::EanBarcode;
 
 	protected:
 		/**
-		 * @brief ´¦ÀíÊäÈëÊı¾İ£¬Éú³ÉÍêÕûÌõÂëÊı¾İ£¨°üº¬Ğ£ÑéÎ»£©
-		 * @param code 12Î»Êı×Ö×Ö·û´®
-		 * @throw std::invalid_argument ÊäÈë³¤¶È²»ÊÇ12Ê±Å×³öÒì³£
+		 * @brief å¤„ç†è¾“å…¥æ•°æ®ï¼Œç”Ÿæˆå®Œæ•´æ¡ç æ•°æ®ï¼ˆåŒ…å«æ ¡éªŒä½ï¼‰
+		 * @param code 12ä½æ•°å­—å­—ç¬¦ä¸²
+		 * @throw std::invalid_argument è¾“å…¥é•¿åº¦ä¸æ˜¯12æ—¶æŠ›å‡ºå¼‚å¸¸
 		 */
 		void processData(const std::string& code) override;
 
 		/**
-		* @brief Éú³ÉÌõĞÎÂë±àÂëÄ£Ê½£¨pattern£©£¬°üº¬»¤À¸¡¢ÖĞ¼äÌõºÍ×óÓÒ±àÂë
+		* @brief ç”Ÿæˆæ¡å½¢ç ç¼–ç æ¨¡å¼ï¼ˆpatternï¼‰ï¼ŒåŒ…å«æŠ¤æ ã€ä¸­é—´æ¡å’Œå·¦å³ç¼–ç 
 		*/
 		void generatePattern() override;
 
 		/**
-		* @brief »ñÈ¡Êı×ÖÔÚÌõĞÎÂëÉÏµÄÖĞĞÄÎ»ÖÃ£¨x×ø±ê£©
-		* @param index Êı×ÖË÷Òı£¬0~12£¨0ÎªÊ×Î»£¬²»ÏÔÊ¾ÔÚÌõÂëÄÚ£©
-		* @return ¶ÔÓ¦Ä£¿éÖĞĞÄ x ×ø±ê
+		* @brief è·å–æ•°å­—åœ¨æ¡å½¢ç ä¸Šçš„ä¸­å¿ƒä½ç½®ï¼ˆxåæ ‡ï¼‰
+		* @param index æ•°å­—ç´¢å¼•ï¼Œ0~12ï¼ˆ0ä¸ºé¦–ä½ï¼Œä¸æ˜¾ç¤ºåœ¨æ¡ç å†…ï¼‰
+		* @return å¯¹åº”æ¨¡å—ä¸­å¿ƒ x åæ ‡
 		*/
 		int getModuleCenterForDigit(size_t index) const override;
 
 	private:
 		/**
-		* @brief ¼ÆËã EAN-13 Ğ£ÑéÎ»
-		* @param code 12 Î»Êı×Ö×Ö·û´®
-		* @return Ğ£ÑéÎ»×Ö·û
+		* @brief è®¡ç®— EAN-13 æ ¡éªŒä½
+		* @param code 12 ä½æ•°å­—å­—ç¬¦ä¸²
+		* @return æ ¡éªŒä½å­—ç¬¦
 		*/
 		char calculateCheckDigit(const std::string& code) override;
 
 		/**
-		 * @brief G Âë±í±àÂë
-		 * @param c Êı×Ö×Ö·û '0'~'9'
-		 * @return 7Î»±àÂë×Ö·û´®
+		 * @brief G ç è¡¨ç¼–ç 
+		 * @param c æ•°å­—å­—ç¬¦ '0'~'9'
+		 * @return 7ä½ç¼–ç å­—ç¬¦ä¸²
 		 */
 		static std::string G_encode(char c);
 	};
