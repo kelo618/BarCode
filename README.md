@@ -1,76 +1,36 @@
-﻿# BarCode
+# BarCode
 
-A C++17 barcode generation project based on OpenCV.
+一个简洁的 C++17/Qt 条码图片生成程序。编码核心支持 EAN-8、EAN-13、UPC-A、UPC-E、ITF-14、Code39、Code93、Code128、GS1-128 和 Codabar；当前程序入口使用 Code128 并保存 PNG。
 
-## Supported barcode types
+## 构建
 
-- `EAN-8` (7-digit input, auto check digit)
-- `EAN-13` (12-digit input, auto check digit)
-- `Code39`
-- `Code128` (A/B/C switching logic)
-
-## Project layout
-
-- `BarCode/BarCode.h`, `BarCode/BarCode.cpp`: shared base classes and rendering flow.
-- `BarCode/ean8.*`, `BarCode/ean13.*`: EAN implementations.
-- `BarCode/code39.*`, `BarCode/code128.*`: Code implementations.
-- `BarCode/BarcodeFactory.h`: barcode factory API.
-- `BarCode/main.cpp`: demo entry.
-- `CMakeLists.txt`: library + demo build entry (`barcode_core` + `barcode_demo`).
-
-## Build (Visual Studio solution)
-
-1. Open `BarCode.sln`.
-2. Configure OpenCV include/lib paths in `BarCode/BarCode.vcxproj` if needed.
-3. Build `Debug|x64` or `Release|x64`.
-
-The solution is split into three projects:
-
-- `BarCode`: core static library.
-- `BarCodeDemo`: demo executable.
-- `BarCodeTests`: regression tests.
-
-## Build (CMake)
+需要 CMake 3.20+ 和 Qt 6.8+。在 Qt 开发环境中执行：
 
 ```powershell
-cmake -S . -B build
-cmake --build build --config Release
+qt-cmake -S . -B out/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build out/build
 ```
 
-## Basic usage
+## 生成图片
 
-```cpp
-#include "BarcodeFactory.h"
-using namespace barcode;
-
-auto barcode = BarcodeFactory::create<Code128>(BarcodeSize::STANDARD);
-barcode->showLabels(false);
-barcode->encode("KSGM6PQ7Q2410S0772");
-barcode->save("barcode.png");
-```
-
-## Notes
-
-- `show()` uses OpenCV GUI (`imshow` + `waitKey`), suitable for local desktop debugging.
-- For server-side usage, prefer `encode()` + `save()` or `getImage()`.
-
-## Regression tests
-
-Build `BarCodeTests` and run:
+不带参数运行时，程序会在当前目录生成 `barcode.png`，内容为 `AB1234CD`。
 
 ```powershell
-.\x64\Debug\BarCodeTestsd.exe
+./out/build/barcode.exe
 ```
 
-or
+也可传入条码数据和输出路径：
 
 ```powershell
-.\x64\Release\BarCodeTests.exe
+./out/build/barcode.exe "ORDER-2026-001" "D:/output/order.png"
 ```
 
-Current minimal regression checks cover:
+程序通过 `savePng()` 原子保存图片；输入、PNG 编码或文件写入失败时会返回非零退出码。
 
-- check digit assertions (EAN-8/EAN-13)
-- full pattern assertions (EAN-8/EAN-13)
-- quiet-zone assertions (EAN-8/EAN-13/Code128)
-- size profile assertions (`MINIMUM`/`STANDARD`/`LARGE`)
+## 更新 GitHub
+
+```powershell
+./update-github.ps1 -Message "Update barcode generator"
+```
+
+脚本会显示变更、创建提交并推送当前分支到 `origin`，不使用强制推送。

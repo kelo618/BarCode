@@ -1,49 +1,17 @@
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
+out/
+build/
 .vs/
+x64/
+CMakeUserPresets.json
+
 *.user
-*.ipdb
-*.iobj
+*.obj
+*.o
+*.lib
+*.a
+*.dll
+*.so
+*.exe
 *.pdb
 *.ilk
-*.recipe
-*.tlog
 *.log
-*.exp
-*.idb
-
-# Build directories
-build/
-x64/
-BarCode/x64/
